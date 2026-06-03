@@ -1,0 +1,900 @@
+@using System.Text.Json
+@model EXE.ViewModels.CustomerJourneyViewModel
+
+@{
+    ViewData["Title"] = "Hành trình đặc sản của tôi";
+    var regionsPayload = Model.Stops
+        .Select(s => new
+        {
+            name = s.RegionName,
+            province = s.Province,
+            firstVisitedAt = s.FirstVisitedAt?.ToString("yyyy-MM-dd"),
+            productName = s.SampleProducts.FirstOrDefault()?.ProductName,
+            productImageUrl = (s.SampleProducts.FirstOrDefault()?.ProductImages?.FirstOrDefault()?.ImageUrl) != null
+                ? "/img/" + s.SampleProducts.FirstOrDefault()!.ProductImages!.FirstOrDefault()!.ImageUrl
+                : "/img/no-image.svg"
+        })
+        .ToList();
+    var regionsJson = JsonSerializer.Serialize(regionsPayload);
+}
+
+<style>
+    .journey-product-marker {
+        background: transparent;
+        border: 0;
+    }
+    .journey-product-marker__img {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        object-fit: cover;
+        border: 2px solid #ffffff;
+        box-shadow: 0 10px 24px rgba(0,0,0,.28);
+        background: #f1f5f9;
+        display: block;
+    }
+    .journey-product-marker__pin {
+        width: 0;
+        height: 0;
+        margin: 0 auto;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 10px solid #ffffff;
+        filter: drop-shadow(0 8px 10px rgba(0,0,0,.18));
+    }
+
+    .journey-timeline-item {
+        position: relative;
+        padding-bottom: 18px;
+    }
+    .journey-timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    .journey-timeline-item__line {
+        position: relative;
+        width: 24px;
+        display: flex;
+        justify-content: center;
+    }
+    .journey-timeline-item__line::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #22c55e, #bbf7d0);
+        opacity: .5;
+    }
+    .journey-timeline-item__dot {
+        position: relative;
+        z-index: 1;
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: #22c55e;
+        border: 3px solid #ecfdf5;
+        box-shadow: 0 0 0 4px rgba(34,197,94,.25);
+        margin-top: 14px;
+    }
+    .journey-timeline-item__content {
+        margin-left: 4px;
+        border-radius: 14px;
+    }
+    .journey-timeline-item__thumb img {
+        width: 72px;
+        height: 72px;
+        border-radius: 12px;
+        object-fit: cover;
+        background: #f1f5f9;
+    }
+    @@media (max-width: 576px) {
+        .journey-timeline-item__thumb img {
+            width: 56px;
+            height: 56px;
+        }
+    }
+    .journey-timeline-product {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 4px 10px 4px 4px;
+        text-decoration: none;
+        max-width: 100%;
+    }
+    .journey-timeline-product__img-wrap img {
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        object-fit: cover;
+        background: #f8fafc;
+    }
+    .journey-timeline-product__name {
+        font-size: .8rem;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 140px;
+    }
+
+    /* 证书预览：稍微缩小并居中 */
+    #journeySharePreviewWrapper {
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    #journeySharePreviewImg {
+        width: 100%;
+        height: auto;
+        max-height: 360px;
+        object-fit: contain;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-1">Hành trình đặc sản của tôi</h2>
+            <p class="text-muted mb-0">Tổng hợp những vùng miền bạn đã “đặt chân” qua thông qua các lần mua đặc sản.</p>
+        </div>
+    </div>
+
+    @if (Model.Stops == null || !Model.Stops.Any())
+    {
+        <div class="row">
+            <div class="col-md-8 mb-4">
+                <div class="alert alert-info">
+                    <h5 class="alert-heading mb-2">Chưa có hành trình nào</h5>
+                    <p class="mb-2">
+                        Bạn chưa có đơn hàng gắn với vùng miền nào. Hãy bắt đầu khám phá đặc sản khắp Việt Nam ngay hôm nay!
+                    </p>
+                    <a class="btn btn-primary" href="/Product">Khám phá đặc sản</a>
+                </div>
+            </div>
+        </div>
+        @* Gợi ý vùng để bắt đầu (khi chưa có đơn) *@
+        @if (Model.NextRegionSuggestions?.Any() ?? false)
+        {
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <h4 class="mb-3">Bắt đầu từ vùng nào?</h4>
+                    <p class="text-muted small mb-3">Chọn một vùng để xem đặc sản và đặt hàng – hành trình của bạn sẽ bắt đầu từ đó.</p>
+                    <div class="row g-3">
+                        @foreach (var next in Model.NextRegionSuggestions)
+                        {
+                            <div class="col-sm-6 col-md-4 col-lg-2">
+                                <a href="/Product?regionId=@next.RegionId" class="text-decoration-none">
+                                    <div class="card border-0 shadow-sm h-100 journey-next-region-card">
+                                        <div class="card-body text-center py-3">
+                                            <i class="bi bi-geo-alt-fill text-primary fs-4 mb-2 d-block"></i>
+                                            <h6 class="mb-1 text-dark">@next.RegionName</h6>
+                                            @if (!string.IsNullOrWhiteSpace(next.Province))
+                                            {
+                                                <span class="small text-muted">@next.Province</span>
+                                            }
+                                            <p class="small text-muted mb-0 mt-1">@next.Reason</p>
+                                            <span class="badge bg-light text-primary border border-primary mt-2">Xem đặc sản <i class="bi bi-arrow-right small"></i></span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        @* Cấp độ khách + thống kê *@
+        <div class="row g-4 mb-4 align-items-stretch">
+            @if (!string.IsNullOrEmpty(Model.JourneyLevelName))
+            {
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 journey-level-card journey-level-@Model.JourneyLevelOrder">
+                        <div class="card-body text-center d-flex flex-column justify-content-center">
+                            <span class="journey-level-badge mb-2">@Model.JourneyLevelName</span>
+                            <div class="text-muted small">Cấp độ hành trình</div>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Số vùng đã check-in</div>
+                        <div class="fs-2 fw-bold">@Model.RegionsCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Tổng số đơn</div>
+                        <div class="fs-2 fw-bold">@Model.TotalOrders</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Tổng chi tiêu</div>
+                        <div class="fs-2 fw-bold text-primary">
+                            @Model.TotalAmount.ToString("N0") ₫
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Tiến độ 3 miền + Mục tiêu nhỏ + Chia sẻ *@
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                            <div>
+                                <h5 class="card-title mb-2">Tiến độ hành trình 3 miền</h5>
+                                <p class="text-muted small mb-0">Khám phá đặc sản Bắc – Trung – Nam để nhận huy hiệu "Trọn vẹn 3 miền".</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="journeyShareCopy" title="Sao chép text chia sẻ">
+                                    <i class="bi bi-clipboard me-1"></i> Sao chép
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="journeyShareImage" title="Tải ảnh hành trình">
+                                    <i class="bi bi-image me-1"></i> Tải ảnh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                            <span class="journey-region-pill @(Model.HasNorth ? "journey-region-done" : "journey-region-todo")">
+                                <i class="bi @(Model.HasNorth ? "bi-check-circle-fill" : "bi-geo-alt") me-1"></i> Miền Bắc
+                            </span>
+                            <span class="journey-region-pill @(Model.HasCentral ? "journey-region-done" : "journey-region-todo")">
+                                <i class="bi @(Model.HasCentral ? "bi-check-circle-fill" : "bi-geo-alt") me-1"></i> Miền Trung
+                            </span>
+                            <span class="journey-region-pill @(Model.HasSouth ? "journey-region-done" : "journey-region-todo")">
+                                <i class="bi @(Model.HasSouth ? "bi-check-circle-fill" : "bi-geo-alt") me-1"></i> Miền Nam
+                            </span>
+                            <span class="ms-2 text-muted small">@((Model.HasNorth ? 1 : 0) + (Model.HasCentral ? 1 : 0) + (Model.HasSouth ? 1 : 0))/3 miền</span>
+                        </div>
+                        <div id="journeySharePreviewWrapper" class="mt-3" style="display:none;">
+                            <div class="border rounded-3 p-2 bg-light">
+                                <div class="small text-muted mb-1">Giấy chứng nhận hành trình của bạn:</div>
+                                <img id="journeySharePreviewImg" src="" alt="Giấy chứng nhận hành trình"
+                                     class="img-fluid rounded-3 border bg-white" />
+                            </div>
+                        </div>
+                        @if (Model.NextGoals?.Any() ?? false)
+                        {
+                            <div class="journey-next-goals border-top pt-3 mt-2">
+                                <h6 class="text-secondary mb-2"><i class="bi bi-bullseye me-1"></i> Mục tiêu tiếp theo</h6>
+                                <ul class="list-unstyled mb-0">
+                                    @foreach (var goal in Model.NextGoals)
+                                    {
+                                        <li class="mb-1 small"><i class="bi bi-arrow-right-circle text-primary me-2"></i>@goal</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Gợi ý vùng tiếp theo (có link) *@
+        @if (Model.NextRegionSuggestions?.Any() ?? false)
+        {
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <h4 class="mb-3">Gợi ý vùng tiếp theo</h4>
+                    <p class="text-muted small mb-3">Những vùng bạn chưa ghé – bấm vào để xem đặc sản và đặt hàng ngay.</p>
+                    <div class="row g-3">
+                        @foreach (var next in Model.NextRegionSuggestions)
+                        {
+                            <div class="col-sm-6 col-md-4 col-lg-2">
+                                <a href="/Product?regionId=@next.RegionId" class="text-decoration-none">
+                                    <div class="card border-0 shadow-sm h-100 journey-next-region-card">
+                                        <div class="card-body text-center py-3">
+                                            <i class="bi bi-geo-alt-fill text-primary fs-4 mb-2 d-block"></i>
+                                            <h6 class="mb-1 text-dark">@next.RegionName</h6>
+                                            @if (!string.IsNullOrWhiteSpace(next.Province))
+                                            {
+                                                <span class="small text-muted">@next.Province</span>
+                                            }
+                                            <p class="small text-muted mb-0 mt-1">@next.Reason</p>
+                                            <span class="badge bg-light text-primary border border-primary mt-2">Xem đặc sản <i class="bi bi-arrow-right small"></i></span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if ((Model.Badges?.Any() ?? false) || (Model.Suggestions?.Any() ?? false))
+        {
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    @if (Model.Badges?.Any() ?? false)
+                    {
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Huy hiệu của bạn</h5>
+                                <ul class="list-unstyled mb-0">
+                                    @foreach (var badge in Model.Badges)
+                                    {
+                                        <li class="mb-2">
+                                            <span class="badge bg-warning text-dark me-2">★</span>
+                                            @badge
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="col-md-6">
+                    @if (Model.Suggestions?.Any() ?? false)
+                    {
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Gợi ý tiếp theo</h5>
+                                <ul class="list-unstyled mb-0">
+                                    @foreach (var s in Model.Suggestions)
+                                    {
+                                        <li class="mb-2">
+                                            <i class="bi bi-compass text-primary me-2"></i>@s
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <h4 class="mb-3">Timeline hành trình</h4>
+                <div class="timeline">
+                    @foreach (var stop in Model.Stops)
+                    {
+                        var firstProduct = stop.SampleProducts?.FirstOrDefault();
+                        var firstImage = firstProduct?.ProductImages?.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+                        <div class="journey-timeline-item d-flex">
+                            <div class="journey-timeline-item__line">
+                                <span class="journey-timeline-item__dot"></span>
+                            </div>
+                            <div class="journey-timeline-item__content card border-0 shadow-sm flex-grow-1">
+                                <div class="card-body d-flex gap-3">
+                                    <div class="journey-timeline-item__thumb">
+                                        <img src="~/img/@firstImage"
+                                             alt="@firstProduct?.ProductName"
+                                             onerror="this.onerror=null;this.src='/img/no-image.svg';" />
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1 flex-wrap gap-2">
+                                            <div>
+                                                <div class="small text-success fw-semibold text-uppercase">
+                                                    @(stop.FirstVisitedAt?.ToString("dd/MM/yyyy") ?? "Chưa rõ ngày")
+                                                </div>
+                                                <h5 class="mb-1">
+                                                    @stop.RegionName
+                                                    @if (!string.IsNullOrWhiteSpace(stop.Province))
+                                                    {
+                                                        <span class="text-muted fw-normal">(@stop.Province)</span>
+                                                    }
+                                                </h5>
+                                            </div>
+                                            <div class="text-end small text-muted">
+                                                @stop.OrdersCount đơn · @stop.TotalAmount.ToString("N0") ₫
+                                            </div>
+                                        </div>
+
+                                        @if (stop.SampleProducts?.Any() ?? false)
+                                        {
+                                            <div class="mb-1 small text-muted">
+                                                Sản phẩm nổi bật:
+                                            </div>
+                                            <div class="journey-timeline-item__products d-flex flex-wrap gap-2">
+                                                @foreach (var p in stop.SampleProducts.Take(4))
+                                                {
+                                                    var img = p.ProductImages?.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+                                                    <a href="/Product/Details/@p.ProductId"
+                                                       class="journey-timeline-product badge bg-light text-dark border">
+                                                        <span class="journey-timeline-product__img-wrap">
+                                                            <img src="~/img/@img"
+                                                                 alt="@p.ProductName"
+                                                                 onerror="this.onerror=null;this.src='/img/no-image.svg';" />
+                                                        </span>
+                                                        <span class="journey-timeline-product__name">
+                                                            @p.ProductName
+                                                        </span>
+                                                    </a>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                    <div class="card-body p-0 d-flex flex-column">
+                        <div class="px-3 px-md-4 pt-3 pt-md-4 pb-2 border-bottom">
+                            <h4 class="mb-1">Bản đồ hành trình</h4>
+                            <p class="text-muted small mb-0">
+                                Các điểm đánh dấu thể hiện vùng bạn đã mua đặc sản, được minh họa trên bản đồ Việt Nam.
+                            </p>
+                        </div>
+                        <div class="journey-map-wrap position-relative">
+                            <div id="journeyMap"
+                                 style="width:100%; height:540px; min-height:540px; border-radius:0; overflow:hidden;">
+                            </div>
+                        </div>
+                        <div class="mt-2 mt-md-3 px-3 px-md-4 pb-3">
+                            <h6 class="mb-2">Danh sách vùng đã ghé</h6>
+                            <ul class="list-unstyled mb-0 small journey-visited-list">
+                                @foreach (var stop in Model.Stops)
+                                {
+                                    <li class="mb-1 d-flex align-items-center">
+                                        <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                                        <span class="fw-semibold">@stop.RegionName</span>
+                                        @if (!string.IsNullOrWhiteSpace(stop.Province))
+                                        {
+                                            <span class="text-muted ms-1">(@stop.Province)</span>
+                                        }
+                                        <span class="text-muted small ms-1">– @stop.OrdersCount đơn</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script>
+        // Hiệu ứng chúc mừng khi có huy hiệu
+        (function () {
+            const hasBadges = @(Model.Badges?.Any() ?? false ? "true" : "false");
+            if (!hasBadges) return;
+
+            function fireCelebration() {
+                if (typeof confetti !== 'function') return;
+
+                const duration = 2500;
+                const animationEnd = Date.now() + duration;
+                const defaults = {
+                    startVelocity: 30,
+                    spread: 360,
+                    ticks: 80,
+                    zIndex: 2000
+                };
+
+                function randomInRange(min, max) {
+                    return Math.random() * (max - min) + min;
+                }
+
+                const interval = setInterval(function () {
+                    const timeLeft = animationEnd - Date.now();
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+
+                    const particleCount = 80 * (timeLeft / duration);
+
+                    confetti(Object.assign({}, defaults, {
+                        particleCount,
+                        origin: {
+                            x: randomInRange(0.1, 0.3),
+                            y: randomInRange(0.2, 0.6)
+                        }
+                    }));
+                    confetti(Object.assign({}, defaults, {
+                        particleCount,
+                        origin: {
+                            x: randomInRange(0.7, 0.9),
+                            y: randomInRange(0.2, 0.6)
+                        }
+                    }));
+                }, 250);
+            }
+
+            // Gắn ra window để có thể gọi lại khi người dùng bấm các nút khác (vd: Tải ảnh)
+            window.nvJourneyCelebrate = fireCelebration;
+
+            // Mỗi lần vào trang, luôn bắn pháo hoa
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fireCelebration);
+            } else {
+                fireCelebration();
+            }
+        })();
+
+        (function () {
+            const data = @Html.Raw(regionsJson);
+            const mapEl = document.getElementById('journeyMap');
+            if (!mapEl || !window.L) return;
+
+            const map = L.map('journeyMap').setView([16.0471, 108.2068], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            // Một số vùng/phố biến có tọa độ cố định gần đúng
+            const regionCoords = {
+                'Hà Nội': [21.0285, 105.8542],
+                'Bắc Kạn': [22.1470, 105.8348],
+                'Thái Nguyên': [21.5929, 105.8435],
+                'Lạng Sơn': [21.8537, 106.7610],
+                'Hải Phòng': [20.8449, 106.6881],
+                'Quảng Ninh': [21.0064, 107.2925],
+                'Thanh Hóa': [19.8067, 105.7852],
+                'Nghệ An': [18.6796, 105.6813],
+                'Huế': [16.4637, 107.5909],
+                'Đà Nẵng': [16.0544, 108.2022],
+                'Quảng Nam': [15.5394, 108.0191],
+                'Quảng Ngãi': [15.1214, 108.8044],
+                'Khánh Hòa': [12.2388, 109.1967],
+                'Gia Lai': [13.9873, 108.0021],
+                'Đắk Lắk': [12.7100, 108.2378],
+                'TP. Hồ Chí Minh': [10.8231, 106.6297],
+                'Hồ Chí Minh': [10.8231, 106.6297],
+                'Sài Gòn': [10.8231, 106.6297],
+                'Cần Thơ': [10.0452, 105.7469],
+                'Sóc Trăng': [9.6036, 105.9740],
+                'Cà Mau': [9.1768, 105.1524],
+                'An Giang': [10.5216, 105.1259],
+                'Đồng Tháp': [10.4938, 105.6882],
+                'Tiền Giang': [10.4493, 106.3421],
+                'Vĩnh Long': [10.2396, 105.9577],
+                'Bến Tre': [10.2415, 106.3755],
+                'Trung du miền núi Bắc Bộ': [22.2470, 104.0048],
+                'Đông Bắc Bộ': [21.8, 106.2],
+                'Đồng bằng sông Hồng': [20.8, 106.0],
+                'Miền Tây Nam Bộ': [10.3, 105.8]
+            };
+
+            // Dùng thêm fallback để đảm bảo MỌI vùng đều có điểm trên bản đồ (minh họa gần đúng)
+            const dynamicRegionCoords = {};
+            let fallbackIndex = 0;
+
+            function getOrCreateCoord(key) {
+                if (dynamicRegionCoords[key]) return dynamicRegionCoords[key];
+
+                // Thử map theo bảng regionCoords trước
+                let coord = null;
+                for (const name in regionCoords) {
+                    if (key.toLowerCase().includes(name.toLowerCase())) {
+                        coord = regionCoords[name];
+                        break;
+                    }
+                }
+
+                // Nếu vẫn chưa có, tạo một điểm minh họa dọc theo hình chữ S Việt Nam
+                if (!coord) {
+                    const baseLat = 23;   // phía Bắc
+                    const baseLng = 105.5;
+                    const stepLat = 1.2;
+                    const stepLng = 1.3;
+                    const row = Math.floor(fallbackIndex / 4);
+                    const col = fallbackIndex % 4;
+                    const lat = baseLat - row * stepLat - col * 0.2;
+                    const lng = baseLng + col * stepLng;
+                    coord = [lat, lng];
+                    fallbackIndex++;
+                }
+
+                dynamicRegionCoords[key] = coord;
+                return coord;
+            }
+
+            const markers = [];
+            data.forEach((r, idx) => {
+                if (!r) return;
+                const key = (r.province || r.name || '').trim() || ('region_' + idx);
+                const coord = getOrCreateCoord(key);
+                const imgUrl = (r.productImageUrl || '/img/no-image.svg');
+                const icon = L.divIcon({
+                    className: 'journey-product-marker',
+                    html: `<img class="journey-product-marker__img" src="${imgUrl}" alt="" onerror="this.onerror=null;this.src='/img/no-image.svg';" /><div class="journey-product-marker__pin"></div>`,
+                    iconSize: [34, 44],
+                    iconAnchor: [17, 44],
+                    popupAnchor: [0, -44]
+                });
+                const marker = L.marker(coord, { icon }).addTo(map);
+                const label = `${r.name || ''}${r.province ? ' (' + r.province + ')' : ''}`;
+                const date = r.firstVisitedAt ? `Lần đầu ghé: ${r.firstVisitedAt}` : '';
+                const pName = r.productName ? `<br/><small>Sản phẩm: ${r.productName}</small>` : '';
+                marker.bindPopup(`<strong>${label}</strong><br/><small>${date}</small>${pName}`);
+                markers.push(marker);
+            });
+
+            if (markers.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.3));
+            }
+        })();
+
+        // Chia sẻ hành trình
+        (function () {
+            const shareData = {
+                levelName: @Html.Raw(JsonSerializer.Serialize(Model.JourneyLevelName ?? "")),
+                regionsCount: @Model.RegionsCount,
+                totalOrders: @Model.TotalOrders,
+                totalAmount: @Html.Raw(JsonSerializer.Serialize(Model.TotalAmount.ToString("N0"))),
+                hasNorth: @(Model.HasNorth ? "true" : "false"),
+                hasCentral: @(Model.HasCentral ? "true" : "false"),
+                hasSouth: @(Model.HasSouth ? "true" : "false"),
+                badges: @Html.Raw(JsonSerializer.Serialize(Model.Badges ?? new List<string>())),
+                regionNames: @Html.Raw(JsonSerializer.Serialize(Model.Stops?.Select(s => s.RegionName + (string.IsNullOrEmpty(s.Province) ? "" : " (" + s.Province + ")")).ToList() ?? new List<string>()))
+            };
+
+            function getShareText() {
+                const m = (shareData.hasNorth ? 1 : 0) + (shareData.hasCentral ? 1 : 0) + (shareData.hasSouth ? 1 : 0);
+                let t = "🍃 Hành trình đặc sản của tôi @@ Nguồn Việt\n";
+                t += "Cấp: " + (shareData.levelName || "Khám phá") + " | " + shareData.regionsCount + " vùng | " + shareData.totalOrders + " đơn | " + shareData.totalAmount + "₫\n";
+                t += "Tiến độ 3 miền: " + m + "/3 (Bắc" + (shareData.hasNorth ? "✓" : "") + " Trung" + (shareData.hasCentral ? "✓" : "") + " Nam" + (shareData.hasSouth ? "✓" : "") + ")\n";
+                if (shareData.badges && shareData.badges.length) t += "Huy hiệu: " + shareData.badges.join(" · ") + "\n";
+                if (shareData.regionNames && shareData.regionNames.length) t += "Đã ghé: " + shareData.regionNames.join(", ") + "\n";
+                t += "Khám phá đặc sản vùng miền: nguonviet.vn";
+                return t;
+            }
+
+            function renderCertificateToCanvas() {
+                const c = document.createElement('canvas');
+                c.width = 700;
+                c.height = 420;
+                const ctx = c.getContext('2d');
+                if (!ctx) return null;
+
+                const W = c.width, H = c.height;
+                const pad = 34;
+                const innerPad = 54;
+                const centerX = W / 2;
+
+                function roundRect(x, y, w, h, r) {
+                    const rr = Math.min(r, w / 2, h / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(x + rr, y);
+                    ctx.arcTo(x + w, y, x + w, y + h, rr);
+                    ctx.arcTo(x + w, y + h, x, y + h, rr);
+                    ctx.arcTo(x, y + h, x, y, rr);
+                    ctx.arcTo(x, y, x + w, y, rr);
+                    ctx.closePath();
+                }
+
+                // Nền giấy (warm, có texture nhẹ)
+                ctx.fillStyle = '#fbf7ee';
+                ctx.fillRect(0, 0, W, H);
+                const bg = ctx.createLinearGradient(0, 0, 0, H);
+                bg.addColorStop(0, 'rgba(255,255,255,.65)');
+                bg.addColorStop(1, 'rgba(232,248,245,.35)');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, W, H);
+
+                // Texture (hạt giấy)
+                ctx.save();
+                ctx.globalAlpha = 0.10;
+                for (let i = 0; i < 1600; i++) {
+                    const x = Math.random() * W;
+                    const y = Math.random() * H;
+                    const s = Math.random() * 1.2;
+                    ctx.fillStyle = i % 3 === 0 ? '#0f766e' : '#111827';
+                    ctx.fillRect(x, y, s, s);
+                }
+                ctx.restore();
+
+                // Khung ngoài + khung trong (bo góc)
+                roundRect(pad, pad, W - pad * 2, H - pad * 2, 18);
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = '#0f766e';
+                ctx.stroke();
+
+                roundRect(innerPad, innerPad, W - innerPad * 2, H - innerPad * 2, 14);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(16,185,129,.55)';
+                ctx.stroke();
+
+                // Góc trang trí
+                ctx.save();
+                ctx.strokeStyle = 'rgba(15,118,110,.55)';
+                ctx.lineWidth = 2;
+                const corner = 26;
+                const cx = innerPad + 8, cy = innerPad + 8;
+                // TL
+                ctx.beginPath();
+                ctx.moveTo(cx, cy + corner);
+                ctx.lineTo(cx, cy);
+                ctx.lineTo(cx + corner, cy);
+                ctx.stroke();
+                // TR
+                ctx.beginPath();
+                ctx.moveTo(W - cx, cy + corner);
+                ctx.lineTo(W - cx, cy);
+                ctx.lineTo(W - cx - corner, cy);
+                ctx.stroke();
+                // BL
+                ctx.beginPath();
+                ctx.moveTo(cx, H - cy - corner);
+                ctx.lineTo(cx, H - cy);
+                ctx.lineTo(cx + corner, H - cy);
+                ctx.stroke();
+                // BR
+                ctx.beginPath();
+                ctx.moveTo(W - cx, H - cy - corner);
+                ctx.lineTo(W - cx, H - cy);
+                ctx.lineTo(W - cx - corner, H - cy);
+                ctx.stroke();
+                ctx.restore();
+
+                // Header badge (seal)
+                const sealY = innerPad + 40;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(centerX, sealY, 36, 0, Math.PI * 2);
+                ctx.fillStyle = '#0f766e';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(centerX, sealY, 30, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(250,204,21,.95)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.font = 'bold 22px "Segoe UI", sans-serif';
+                ctx.fillStyle = '#facc15';
+                ctx.textAlign = 'center';
+                ctx.fillText('★', centerX, sealY + 8);
+                ctx.restore();
+
+                // Title/subtitle
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#052e2b';
+                ctx.font = '800 30px "Segoe UI", sans-serif';
+                ctx.fillText('GIẤY CHỨNG NHẬN HÀNH TRÌNH ĐẶC SẢN', centerX, sealY + 78);
+                ctx.fillStyle = '#475569';
+                ctx.font = '14px "Segoe UI", sans-serif';
+                ctx.fillText('Nguồn Việt – Ghi nhận hành trình khám phá đặc sản vùng miền của bạn', centerX, sealY + 102);
+
+                // Content area split: left text, right map
+                const contentTop = sealY + 132;
+                const leftX = innerPad + 26;
+                const rightX = W - innerPad - 26;
+                const contentW = W - innerPad * 2 - 52;
+
+                // Section header
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#0f172a';
+                ctx.font = '800 18px "Segoe UI", sans-serif';
+                ctx.fillText('Thông tin hành trình', leftX, contentTop);
+
+                const levelName = (shareData.levelName || 'Khám phá');
+                const m = (shareData.hasNorth ? 1 : 0) + (shareData.hasCentral ? 1 : 0) + (shareData.hasSouth ? 1 : 0);
+                const progress = `Tiến độ 3 miền: ${m}/3  (Bắc${shareData.hasNorth ? ' ✓' : ''} · Trung${shareData.hasCentral ? ' ✓' : ''} · Nam${shareData.hasSouth ? ' ✓' : ''})`;
+
+                // Key-values (paper-like)
+                ctx.font = '15px "Segoe UI", sans-serif';
+                ctx.fillStyle = '#0f172a';
+                const lines = [
+                    ['Cấp độ', levelName],
+                    ['Đã ghé', `${shareData.regionsCount} vùng · ${shareData.totalOrders} đơn đặc sản`],
+                    ['Tổng chi tiêu', `${shareData.totalAmount}₫`],
+                    ['Tiến độ', progress]
+                ];
+
+                let y = contentTop + 26;
+                ctx.fillStyle = '#334155';
+                for (const [k, v] of lines) {
+                    ctx.fillStyle = '#64748b';
+                    ctx.fillText(k + ':', leftX, y);
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = '600 15px "Segoe UI", sans-serif';
+                    ctx.fillText(String(v), leftX + 96, y);
+                    ctx.font = '15px "Segoe UI", sans-serif';
+                    y += 26;
+                }
+
+                if (shareData.badges && shareData.badges.length) {
+                    ctx.fillStyle = '#92400e';
+                    ctx.font = '600 14px "Segoe UI", sans-serif';
+                    const badgesText = 'Huy hiệu: ' + shareData.badges.slice(0, 4).join(' · ');
+                    ctx.fillText(badgesText, leftX, y + 6);
+                    y += 26;
+                }
+
+                // Signature & date
+                const sigY = H - innerPad - 74;
+                ctx.strokeStyle = 'rgba(15,23,42,.18)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(leftX, sigY);
+                ctx.lineTo(leftX + 260, sigY);
+                ctx.stroke();
+                ctx.fillStyle = '#64748b';
+                ctx.font = '12px "Segoe UI", sans-serif';
+                ctx.fillText('Đại diện Nguồn Việt', leftX, sigY + 18);
+
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#64748b';
+                ctx.font = '12px "Segoe UI", sans-serif';
+                ctx.fillText('Nguồn Việt – Đặc sản vùng miền', rightX, H - innerPad - 26);
+                ctx.font = '11px "Segoe UI", sans-serif';
+                ctx.fillText('Cảm ơn bạn đã đồng hành cùng hành trình khám phá đặc sản khắp 3 miền Việt Nam.', rightX, H - innerPad - 10);
+
+                return c;
+            }
+
+            // Tự vẽ sẵn ảnh chứng nhận để luôn hiển thị dưới tiến độ 3 miền
+            function initPreview() {
+                const c = renderCertificateToCanvas();
+                if (!c) return;
+                const dataUrl = c.toDataURL('image/png');
+                const wrapper = document.getElementById('journeySharePreviewWrapper');
+                const img = document.getElementById('journeySharePreviewImg');
+                if (wrapper && img) {
+                    img.src = dataUrl;
+                    wrapper.style.display = '';
+                }
+            }
+            initPreview();
+
+            document.getElementById('journeyShareCopy')?.addEventListener('click', function () {
+                const text = getShareText();
+                navigator.clipboard.writeText(text).then(function () {
+                    const btn = document.getElementById('journeyShareCopy');
+                    const orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Đã copy!';
+                    btn.classList.add('btn-success', 'border-success');
+                    btn.classList.remove('btn-outline-primary');
+                    setTimeout(function () {
+                        btn.innerHTML = orig;
+                        btn.classList.remove('btn-success', 'border-success');
+                        btn.classList.add('btn-outline-primary');
+                    }, 2000);
+                }).catch(function () {
+                    alert('Không thể sao chép. Bạn có thể tự copy nội dung từ đây:\n\n' + text);
+                });
+            });
+
+            document.getElementById('journeyShareImage')?.addEventListener('click', function () {
+                const c = renderCertificateToCanvas();
+                if (!c) return;
+                const dataUrl = c.toDataURL('image/png');
+
+                // Bấm là bắn pháo hoa thêm lần nữa (nếu có hàm)
+                if (window.nvJourneyCelebrate) {
+                    try { window.nvJourneyCelebrate(); } catch (_) { }
+                }
+
+                // Tải ảnh về
+                const link = document.createElement('a');
+                link.download = 'hanh-trinh-dac-san.png';
+                link.href = dataUrl;
+                link.click();
+
+                // Hiển thị ảnh chứng nhận bên dưới tiến độ 3 miền
+                const wrapper = document.getElementById('journeySharePreviewWrapper');
+                const img = document.getElementById('journeySharePreviewImg');
+                if (wrapper && img) {
+                    img.src = dataUrl;
+                    wrapper.style.display = '';
+                }
+            });
+        })();
+    </script>
+}
+

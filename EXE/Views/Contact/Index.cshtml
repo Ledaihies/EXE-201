@@ -1,0 +1,164 @@
+<!-- Single Page Header start -->
+<div class="container-fluid page-header py-5 mb-0">
+	<h1 class="text-center text-white display-6">Liên hệ Nguồn Việt</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+		<li class="breadcrumb-item active text-white">Liên hệ</li>
+	</ol>
+</div>
+<!-- Single Page Header End -->
+
+<!-- Contact Start -->
+<div class="container-fluid contact py-5" style="background: linear-gradient(180deg,#f9fafb 0,#ecfdf3 35%,#ffffff 100%);">
+	<div class="container py-4 py-md-5">
+		<div class="row g-4 g-lg-5 align-items-start">
+
+			<!-- Cột thông tin + map -->
+			<div class="col-lg-5">
+				<div class="mb-4">
+					<span class="journey-header-badge mb-2">
+						<i class="fas fa-leaf me-1"></i> Nguồn Việt – Đặc sản vùng miền
+					</span>
+					<h2 class="h3 mb-2">Chúng tôi luôn sẵn sàng lắng nghe bạn</h2>
+					<p class="text-muted mb-3">
+						Nếu bạn cần tư vấn chọn đặc sản, hỗ trợ đơn hàng, hợp tác nhà cung cấp hoặc góp ý trải nghiệm,
+						hãy gửi tin nhắn cho Nguồn Việt. Đội ngũ chăm sóc sẽ phản hồi trong khung giờ làm việc.
+					</p>
+				</div>
+
+				<div class="card border-0 shadow-sm rounded-4 mb-4">
+					<div class="card-body p-3 p-md-4">
+						<div class="d-flex align-items-start mb-3">
+							<div class="nv-icon-badge me-3" style="background:#dcfce7;">
+								<i class="fas fa-map-marker-alt text-success"></i>
+							</div>
+							<div>
+								<h5 class="mb-1">Văn phòng</h5>
+								<p class="mb-0 small text-muted">
+									Hà Nội, Việt Nam<br />
+									(Giao hàng toàn quốc từ các vùng miền)
+								</p>
+							</div>
+						</div>
+
+						<div class="d-flex align-items-start mb-3">
+							<div class="nv-icon-badge me-3" style="background:#dbeafe;">
+								<i class="fas fa-envelope text-primary"></i>
+							</div>
+							<div>
+								<h5 class="mb-1">Email hỗ trợ</h5>
+								<p class="mb-0 small text-muted">hotro@nguonviet.vn</p>
+							</div>
+						</div>
+
+						<div class="d-flex align-items-start mb-3">
+							<div class="nv-icon-badge me-3" style="background:#fee2e2;">
+								<i class="fa fa-phone-alt text-danger"></i>
+							</div>
+							<div>
+								<h5 class="mb-1">Hotline</h5>
+								<p class="mb-0 small text-muted">0900 123 456 (08:00 – 22:00 mỗi ngày)</p>
+							</div>
+						</div>
+
+						<div class="d-flex align-items-start">
+							<div class="nv-icon-badge me-3" style="background:#fef9c3;">
+								<i class="fas fa-clock text-warning"></i>
+							</div>
+							<div>
+								<h5 class="mb-1">Thời gian làm việc</h5>
+								<p class="mb-0 small text-muted">
+									Thứ 2 – Chủ nhật: 08:00 – 22:00<br />
+									(Các yêu cầu ngoài giờ sẽ được xử lý vào khung giờ gần nhất)
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="rounded-4 overflow-hidden shadow-sm border mb-3">
+					<iframe class="w-100"
+							style="height: 260px; border: 0;"
+							src="https://www.google.com/maps?q=H%C3%A0%20N%E1%BB%99i%2C%20Vi%E1%BB%87t%20Nam&output=embed"
+							loading="lazy"
+							referrerpolicy="no-referrer-when-downgrade"></iframe>
+				</div>
+				<p class="small text-muted mb-0">
+					Bản đồ chỉ mang tính minh họa khu vực. Nguồn Việt hoạt động theo mô hình thương mại điện tử, giao hàng từ nhiều vùng miền.
+				</p>
+			</div>
+
+			<!-- Cột form liên hệ -->
+			<div class="col-lg-7">
+				<div class="card border-0 shadow-sm rounded-4">
+					<div class="card-body p-3 p-md-4 p-lg-5">
+						<h3 class="h4 mb-2">Gửi lời nhắn cho Nguồn Việt</h3>
+						<p class="text-muted small mb-4">
+							Điền thông tin bên dưới, chọn loại yêu cầu để chúng tôi hỗ trợ nhanh và chính xác hơn.
+						</p>
+						<form method="post" action="/Contact/Send">
+							<div class="row g-3">
+								<div class="col-md-6">
+									<label class="form-label small mb-1">Họ tên <span class="text-danger">*</span></label>
+									<input type="text" name="Name" class="form-control py-2" placeholder="Nguyễn Văn A" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label small mb-1">Email <span class="text-danger">*</span></label>
+									<input type="email" name="Email" class="form-control py-2" placeholder="ban@nguonviet.vn" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label small mb-1">Số điện thoại</label>
+									<input type="tel" name="Phone" class="form-control py-2" placeholder="0900 123 456">
+								</div>
+								<div class="col-md-6">
+									<label class="form-label small mb-1">Loại yêu cầu</label>
+									<select name="Topic" class="form-select py-2">
+										<option value="">Chọn loại yêu cầu</option>
+										<option value="order">Hỗ trợ đơn hàng / thanh toán</option>
+										<option value="product">Hỏi về sản phẩm / vùng miền</option>
+										<option value="partner">Hợp tác nhà cung cấp</option>
+										<option value="feedback">Góp ý trải nghiệm / phản ánh</option>
+										<option value="other">Khác</option>
+									</select>
+								</div>
+								<div class="col-12">
+									<label class="form-label small mb-1">Tiêu đề</label>
+									<input type="text" name="Subject" class="form-control py-2" placeholder="Ví dụ: Hỗ trợ đơn hàng #1234">
+								</div>
+								<div class="col-12">
+									<label class="form-label small mb-1">Nội dung lời nhắn <span class="text-danger">*</span></label>
+									<textarea name="Message" class="form-control" rows="5" placeholder="Mô tả chi tiết câu hỏi hoặc vấn đề bạn gặp phải..." required></textarea>
+								</div>
+								<div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+									<small class="text-muted">
+										Bằng cách gửi, bạn đồng ý để Nguồn Việt liên hệ lại qua email/điện thoại đã cung cấp.
+									</small>
+									<button class="btn btn-success rounded-pill px-4 py-2" type="submit">
+										<i class="fas fa-paper-plane me-1"></i> Gửi lời nhắn
+									</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				<div class="d-flex flex-wrap align-items-center gap-3 mt-3">
+					<div class="small text-muted">Kết nối với Nguồn Việt:</div>
+					<div class="d-flex gap-2">
+						<a href="#" class="btn btn-sm btn-outline-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width:34px;height:34px;">
+							<i class="fab fa-facebook-f"></i>
+						</a>
+						<a href="#" class="btn btn-sm btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center" style="width:34px;height:34px;">
+							<i class="fab fa-instagram"></i>
+						</a>
+						<a href="#" class="btn btn-sm btn-outline-success rounded-circle d-inline-flex align-items-center justify-content-center" style="width:34px;height:34px;">
+							<i class="fab fa-whatsapp"></i>
+						</a>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+</div>
+<!-- Contact End -->

@@ -1,0 +1,7 @@
+@model (string? LevelName, int RegionsCount)
+@if (Model.LevelName != null)
+{
+    <a href="/Journey" class="journey-header-badge text-decoration-none" title="Cấp độ hành trình: @Model.LevelName (@Model.RegionsCount vùng) – Bấm xem chi tiết">
+        <i class="bi bi-geo-alt me-1"></i>@Model.LevelName
+    </a>
+}

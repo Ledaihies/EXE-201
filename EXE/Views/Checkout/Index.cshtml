@@ -1,0 +1,293 @@
+@model EXE.ViewModels.CheckoutViewModel
+
+<!-- Single Page Header -->
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Thanh toán</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/" class="text-white-50">Trang chủ</a></li>
+		<li class="breadcrumb-item"><a href="/Cart" class="text-white-50">Giỏ hàng</a></li>
+		<li class="breadcrumb-item active text-white">Thanh toán</li>
+	</ol>
+</div>
+
+<!-- Checkout Page -->
+<div class="container-fluid py-5 nv-checkout-page">
+	<div class="container">
+		@if (!Model.Items.Any())
+		{
+			<div class="nv-checkout-empty text-center py-5 px-4">
+				<div class="nv-checkout-empty-icon mb-4">
+					<i class="fas fa-shopping-cart"></i>
+				</div>
+				<h4 class="mb-2">Giỏ hàng đang trống</h4>
+				<p class="text-muted mb-4">Thêm sản phẩm vào giỏ trước khi thanh toán.</p>
+				<a href="/Product" class="btn btn-primary rounded-pill px-5 py-3 me-2"><i class="fas fa-store me-2"></i>Mua sắm</a>
+				<a href="/Cart" class="btn btn-outline-secondary rounded-pill px-5 py-3">Xem giỏ hàng</a>
+			</div>
+		}
+		else
+		{
+			<form method="post" action="/Checkout/PayWithBankTransfer" id="checkoutForm">
+				@Html.AntiForgeryToken()
+				<div class="row g-4">
+					<!-- Form thông tin giao hàng -->
+					<div class="col-lg-8">
+						<div class="card border-0 shadow-sm rounded-3 mb-4">
+							<div class="card-body p-4">
+								<h5 class="mb-4"><i class="fas fa-truck me-2 text-primary"></i>Thông tin giao hàng</h5>
+
+								<div class="mb-4">
+									<label class="form-label">Họ và tên người nhận <span class="text-danger">*</span></label>
+									<input type="text" name="ContactName" value="@Model.ContactName" class="form-control form-control-lg" placeholder="Nguyễn Văn A" required>
+								</div>
+
+								<div class="mb-4">
+									<label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+									<input type="tel" name="ContactPhone" value="@Model.ContactPhone" class="form-control form-control-lg" placeholder="0912 345 678" required>
+								</div>
+
+								<div class="mb-4">
+									<label class="form-label">Địa chỉ giao hàng <span class="text-danger">*</span></label>
+									<textarea name="ShippingAddress" class="form-control" rows="3" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành..." required>@Model.ShippingAddress</textarea>
+								</div>
+
+								<div class="row g-3 mb-4">
+									<div class="col-md-4">
+										<label class="form-label">Tỉnh/Thành <span class="text-danger">*</span></label>
+										<select class="form-select form-select-lg js-ghn-province" required>
+											<option value="">Chọn tỉnh/thành</option>
+										</select>
+									</div>
+									<div class="col-md-4">
+										<label class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
+										<select class="form-select form-select-lg js-ghn-district-select" required disabled>
+											<option value="">Chọn quận/huyện</option>
+										</select>
+									</div>
+									<div class="col-md-4">
+										<label class="form-label">Phường/Xã <span class="text-danger">*</span></label>
+										<select class="form-select form-select-lg js-ghn-ward-select" required disabled>
+											<option value="">Chọn phường/xã</option>
+										</select>
+									</div>
+									<input type="hidden" name="ToDistrictId" value="@Model.ToDistrictId" class="js-ghn-district">
+									<input type="hidden" name="ToWardCode" value="@Model.ToWardCode" class="js-ghn-ward">
+									<div class="col-12">
+										<div class="form-text">Phí vận chuyển được tính bằng API Giao Hàng Nhanh theo khu vực nhận hàng.</div>
+										<div class="small text-warning mt-1 js-ghn-status" style="display:none;"></div>
+									</div>
+								</div>
+
+								<div>
+									<label class="form-label">Ghi chú đơn hàng <span class="text-muted small">(không bắt buộc)</span></label>
+									<textarea name="Note" class="form-control" rows="2" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao...">@Model.Note</textarea>
+								</div>
+							</div>
+						</div>
+
+						<!-- Bảo mật -->
+						<div class="d-flex align-items-center gap-3 text-muted small mb-4">
+							<span><i class="fas fa-lock text-success me-2"></i>Thanh toán an toàn</span>
+							<span><i class="fas fa-shield-alt text-primary me-2"></i>Bảo mật SSL</span>
+						</div>
+					</div>
+
+					<!-- Sidebar tổng đơn - sticky -->
+					<div class="col-lg-4">
+						<div class="nv-checkout-summary card border-0 shadow-sm rounded-3 sticky-top" style="top: 120px;">
+							<div class="card-body p-4">
+								<h5 class="mb-4">Đơn hàng của bạn</h5>
+
+								<div class="nv-checkout-products mb-4" style="max-height: 280px; overflow-y: auto;">
+									@foreach (var it in Model.Items)
+									{
+										var p = it.Product;
+										var image = p?.ProductImages?.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+										var price = p?.Price ?? 0;
+										var qty = it.Quantity ?? 0;
+										var line = price * qty;
+										<div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+											<div class="nv-checkout-thumb rounded-2 overflow-hidden" style="width: 56px; height: 56px; flex-shrink: 0;">
+												<img src="~/img/@image" class="w-100 h-100" style="object-fit: cover;" alt="@p?.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+											</div>
+											<div class="flex-grow-1 min-w-0">
+												<div class="fw-semibold text-truncate small">@p?.ProductName</div>
+												<div class="text-muted small">@qty x @String.Format("{0:N0}", price) đ</div>
+											</div>
+											<div class="text-primary fw-semibold small">@String.Format("{0:N0}", line) đ</div>
+										</div>
+									}
+								</div>
+
+								<div class="mb-3">
+									<label class="form-label small text-muted">Mã giảm giá</label>
+									<input type="text" name="VoucherCode" value="@Model.VoucherCode" class="form-control form-control-sm" placeholder="Nhập mã (vd: TET2025, TRUNG10)">
+								</div>
+								@if (!string.IsNullOrWhiteSpace(TempData["CheckoutError"] as string))
+								{
+									<div class="alert alert-warning py-2 small mb-3">@TempData["CheckoutError"]</div>
+								}
+								<div class="d-flex justify-content-between mb-2">
+									<span class="text-muted">Tạm tính:</span>
+									<span id="checkoutSubtotal" data-subtotal="@Model.Subtotal">@String.Format("{0:N0}", Model.Subtotal) đ</span>
+								</div>
+								<div class="d-flex justify-content-between mb-2">
+									<span class="text-muted">Vận chuyển:</span>
+									<span id="checkoutShipping">@String.Format("{0:N0}", Model.ShippingFee) đ</span>
+								</div>
+								@if (Model.DiscountAmount > 0)
+								{
+									<div class="d-flex justify-content-between mb-2 text-success">
+										<span>Giảm giá:</span>
+										<span>-@String.Format("{0:N0}", Model.DiscountAmount) đ</span>
+									</div>
+								}
+								<hr>
+								<div class="d-flex justify-content-between align-items-center mb-4">
+									<span class="fw-bold">Tổng thanh toán:</span>
+									<span class="fs-5 text-primary fw-bold" id="checkoutTotal" data-discount="@Model.DiscountAmount">@String.Format("{0:N0}", Model.Total) đ</span>
+								</div>
+
+								<button type="submit" formaction="/Checkout/PayWithBankTransfer" formmethod="post" class="btn btn-warning w-100 rounded-pill py-3 mt-2">
+									<i class="fas fa-qrcode me-2"></i>Chuyển khoản VietQR
+								</button>
+
+								<button type="submit" formaction="/Checkout/PayWithWallet" formmethod="post" class="btn btn-primary w-100 rounded-pill py-3 mt-2">
+									<i class="fas fa-wallet me-2"></i>Thanh toán bằng ví
+								</button>
+
+								<a href="/Cart" class="btn btn-outline-secondary w-100 rounded-pill py-2 mt-2">
+									<i class="fas fa-arrow-left me-2"></i>Quay lại giỏ hàng
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
+		}
+	</div>
+</div>
+
+<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		const provinceSelect = document.querySelector('.js-ghn-province');
+		const districtSelect = document.querySelector('.js-ghn-district-select');
+		const wardSelect = document.querySelector('.js-ghn-ward-select');
+		const districtInput = document.querySelector('.js-ghn-district');
+		const wardInput = document.querySelector('.js-ghn-ward');
+		const shippingEl = document.getElementById('checkoutShipping');
+		const subtotalEl = document.getElementById('checkoutSubtotal');
+		const totalEl = document.getElementById('checkoutTotal');
+		const statusEl = document.querySelector('.js-ghn-status');
+		let timer = null;
+
+		function money(value) {
+			return Math.round(Number(value || 0)).toLocaleString('vi-VN') + ' đ';
+		}
+
+		async function calculateShipping() {
+			const districtId = Number(districtInput?.value || 0);
+			const wardCode = (wardInput?.value || '').trim();
+			if (!districtId || !wardCode) return;
+
+			try {
+				const res = await fetch('/Checkout/CalculateShippingFee', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ toDistrictId: districtId, toWardCode: wardCode })
+				});
+				if (!res.ok) return;
+				const data = await res.json();
+				const subtotal = Number(subtotalEl?.dataset.subtotal || 0);
+				const discount = Number(totalEl?.dataset.discount || 0);
+				const fee = Number(data.fee || 0);
+				if (shippingEl) shippingEl.textContent = money(fee);
+				if (totalEl) totalEl.textContent = money(Math.max(0, subtotal + fee - discount));
+			} catch {
+				// Keep the server-side fallback fee visible when GHN cannot be reached.
+			}
+		}
+
+		function scheduleCalculate() {
+			clearTimeout(timer);
+			timer = setTimeout(calculateShipping, 500);
+		}
+
+		function fillSelect(select, items, placeholder, valueSelector) {
+			if (!select) return;
+			select.innerHTML = '';
+			const placeholderOption = document.createElement('option');
+			placeholderOption.value = '';
+			placeholderOption.textContent = placeholder;
+			select.appendChild(placeholderOption);
+			for (const item of items || []) {
+				const option = document.createElement('option');
+				option.value = valueSelector(item);
+				option.textContent = item.name;
+				select.appendChild(option);
+			}
+		}
+
+		async function loadJson(url) {
+			try {
+				const res = await fetch(url);
+				if (!res.ok) return [];
+				return await res.json();
+			} catch {
+				return [];
+			}
+		}
+
+		function setStatus(message) {
+			if (!statusEl) return;
+			statusEl.textContent = message || '';
+			statusEl.style.display = message ? '' : 'none';
+		}
+
+		async function loadProvinces() {
+			setStatus('');
+			const provinces = await loadJson('/Checkout/GHNProvinces');
+			fillSelect(provinceSelect, provinces, 'Chọn tỉnh/thành', x => x.id);
+			if (!provinces.length) {
+				setStatus('Chưa tải được danh sách địa chỉ GHN. Kiểm tra GHN Token/ShopId trong appsettings.json và restart ứng dụng.');
+			}
+		}
+
+		provinceSelect?.addEventListener('change', async function () {
+			if (districtInput) districtInput.value = '';
+			if (wardInput) wardInput.value = '';
+			fillSelect(districtSelect, [], 'Chọn quận/huyện', x => x.id);
+			fillSelect(wardSelect, [], 'Chọn phường/xã', x => x.code);
+			if (districtSelect) districtSelect.disabled = true;
+			if (wardSelect) wardSelect.disabled = true;
+			const provinceId = Number(this.value || 0);
+			if (!provinceId) return;
+			const districts = await loadJson('/Checkout/GHNDistricts?provinceId=' + provinceId);
+			fillSelect(districtSelect, districts, 'Chọn quận/huyện', x => x.id);
+			if (districtSelect) districtSelect.disabled = false;
+			if (!districts.length) setStatus('Không tải được quận/huyện từ GHN. Kiểm tra GHN Token hoặc thử chọn lại tỉnh/thành.');
+			else setStatus('');
+		});
+
+		districtSelect?.addEventListener('change', async function () {
+			if (districtInput) districtInput.value = this.value || '';
+			if (wardInput) wardInput.value = '';
+			fillSelect(wardSelect, [], 'Chọn phường/xã', x => x.code);
+			if (wardSelect) wardSelect.disabled = true;
+			const districtId = Number(this.value || 0);
+			if (!districtId) return;
+			const wards = await loadJson('/Checkout/GHNWards?districtId=' + districtId);
+			fillSelect(wardSelect, wards, 'Chọn phường/xã', x => x.code);
+			if (wardSelect) wardSelect.disabled = false;
+			if (!wards.length) setStatus('Không tải được phường/xã từ GHN. Kiểm tra GHN Token hoặc thử chọn lại quận/huyện.');
+			else setStatus('');
+		});
+
+		wardSelect?.addEventListener('change', function () {
+			if (wardInput) wardInput.value = this.value || '';
+			scheduleCalculate();
+		});
+
+		loadProvinces();
+	});
+</script>

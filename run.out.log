@@ -1,0 +1,816 @@
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (39ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'SellerId') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD SellerId INT NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'ApprovalStatus') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD ApprovalStatus NVARCHAR(20) NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'OriginProofImageUrl') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD OriginProofImageUrl NVARCHAR(255) NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'ViewCount') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD ViewCount INT NULL CONSTRAINT DF_Products_ViewCount DEFAULT 0;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'AdvertisingBudget') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD AdvertisingBudget DECIMAL(10, 2) NULL CONSTRAINT DF_Products_AdvertisingBudget DEFAULT 0;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'AdvertisingPackageCode') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD AdvertisingPackageCode NVARCHAR(50) NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'AdvertisingPackageName') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD AdvertisingPackageName NVARCHAR(120) NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'AdvertisingDays') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD AdvertisingDays INT NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'AdvertisingPaidDate') IS NULL
+      BEGIN
+          ALTER TABLE Products ADD AdvertisingPaidDate DATETIME NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Products', 'AdvertisingEndDate') IS NULL
+BEGIN
+    ALTER TABLE Products ADD AdvertisingEndDate DATETIME NULL;
+END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Orders', 'ShippingFee') IS NULL
+BEGIN
+    ALTER TABLE Orders ADD ShippingFee DECIMAL(10, 2) NULL;
+END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Vouchers', 'Description') IS NULL
+BEGIN
+    ALTER TABLE Vouchers ADD Description NVARCHAR(300) NULL;
+      END;
+      
+      IF COL_LENGTH('Vouchers', 'DiscountFixed') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD DiscountFixed DECIMAL(12, 2) NULL;
+      END;
+      
+      IF COL_LENGTH('Vouchers', 'MinOrderAmount') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD MinOrderAmount DECIMAL(12, 2) NULL;
+      END;
+      
+      IF COL_LENGTH('Vouchers', 'StartDate') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD StartDate DATETIME NULL;
+      END;
+      
+      IF COL_LENGTH('Vouchers', 'MaxUses') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD MaxUses INT NULL;
+      END;
+      
+      IF COL_LENGTH('Vouchers', 'RegionId') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD RegionId INT NULL;
+      END;
+      
+      IF COL_LENGTH('Vouchers', 'CategoryId') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD CategoryId INT NULL;
+      END;
+      
+      IF COL_LENGTH('Vouchers', 'OccasionTag') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD OccasionTag NVARCHAR(50) NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Vouchers', 'IsFreeShipping') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD IsFreeShipping BIT NOT NULL CONSTRAINT DF_Vouchers_IsFreeShipping DEFAULT 0;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('Vouchers', 'IsActive') IS NULL
+      BEGIN
+          ALTER TABLE Vouchers ADD IsActive BIT NOT NULL CONSTRAINT DF_Vouchers_IsActive DEFAULT 1;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (23ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      UPDATE Products
+      SET ApprovalStatus = N'Approved'
+      WHERE ApprovalStatus IS NULL;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      UPDATE Products
+      SET ViewCount = 0
+      WHERE ViewCount IS NULL;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      UPDATE Products
+      SET AdvertisingBudget = 0
+      WHERE AdvertisingBudget IS NULL;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (18ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF OBJECT_ID('AdminBankAccounts', 'U') IS NULL
+      BEGIN
+          CREATE TABLE AdminBankAccounts (
+              BankAccountId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+              BankName NVARCHAR(120) NULL,
+              AccountNumber NVARCHAR(50) NULL,
+              AccountHolder NVARCHAR(120) NULL,
+              TransferNote NVARCHAR(300) NULL,
+              QrImageUrl NVARCHAR(255) NULL,
+              IsActive BIT NOT NULL CONSTRAINT DF_AdminBankAccounts_IsActive DEFAULT 1,
+              UpdatedDate DATETIME NULL CONSTRAINT DF_AdminBankAccounts_UpdatedDate DEFAULT GETDATE()
+          );
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF COL_LENGTH('AdminBankAccounts', 'QrImageUrl') IS NULL
+      BEGIN
+          ALTER TABLE AdminBankAccounts ADD QrImageUrl NVARCHAR(255) NULL;
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF OBJECT_ID('AdvertisingPackages', 'U') IS NULL
+      BEGIN
+          CREATE TABLE AdvertisingPackages (
+              PackageId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+              Code NVARCHAR(50) NULL,
+              Name NVARCHAR(120) NULL,
+              Description NVARCHAR(300) NULL,
+              Price DECIMAL(10,2) NOT NULL,
+              Days INT NOT NULL,
+              IsActive BIT NOT NULL CONSTRAINT DF_AdvertisingPackages_IsActive DEFAULT 1,
+              CreatedDate DATETIME NULL CONSTRAINT DF_AdvertisingPackages_CreatedDate DEFAULT GETDATE()
+          );
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF NOT EXISTS (SELECT 1 FROM AdvertisingPackages)
+      BEGIN
+          INSERT INTO AdvertisingPackages (Code, Name, Description, Price, Days, IsActive, CreatedDate)
+          VALUES
+          (N'banner_1d', N'Banner 1 ngày', N'Hiển thị trên banner và thanh quảng cáo trang chủ trong 1 ngày.', 23000, 1, 1, GETDATE()),
+          (N'banner_3d', N'Banner 3 ngày', N'Gói thử nghiệm 3 ngày trên banner và thanh quảng cáo.', 65000, 3, 1, GETDATE()),
+          (N'banner_7d', N'Banner 7 ngày', N'Phù hợp sản phẩm mới cần tăng nhận diện trong tuần đầu.', 149000, 7, 1, GETDATE()),
+          (N'banner_14d', N'Banner 14 ngày', N'Ưu tiên hiển thị dài hơn cho sản phẩm đang bán tốt.', 279000, 14, 1, GETDATE()),
+          (N'banner_30d', N'Banner 30 ngày', N'Gói tháng cho shop muốn duy trì hiện diện trên trang chủ.', 529000, 30, 1, GETDATE());
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF OBJECT_ID('AdvertisingPaymentRequests', 'U') IS NULL
+BEGIN
+    CREATE TABLE AdvertisingPaymentRequests (
+              RequestId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+              ProductId INT NOT NULL,
+              SellerId INT NOT NULL,
+              PackageCode NVARCHAR(50) NULL,
+              PackageName NVARCHAR(120) NULL,
+              Amount DECIMAL(10,2) NOT NULL,
+              Days INT NOT NULL,
+              Status NVARCHAR(30) NULL,
+              TransferContent NVARCHAR(300) NULL,
+              CreatedDate DATETIME NULL CONSTRAINT DF_AdvertisingPaymentRequests_CreatedDate DEFAULT GETDATE(),
+              ConfirmedDate DATETIME NULL,
+              ConfirmedByAdminId INT NULL,
+              CONSTRAINT FK_AdvertisingPaymentRequests_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId),
+              CONSTRAINT FK_AdvertisingPaymentRequests_Seller FOREIGN KEY (SellerId) REFERENCES Users(UserId)
+          );
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF OBJECT_ID('OrderReturnRequests', 'U') IS NULL
+BEGIN
+    CREATE TABLE OrderReturnRequests (
+        ReturnRequestId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        OrderId INT NOT NULL,
+        UserId INT NOT NULL,
+        Reason NVARCHAR(1000) NOT NULL,
+        ProofImageUrl NVARCHAR(300) NOT NULL,
+        Status NVARCHAR(30) NOT NULL CONSTRAINT DF_OrderReturnRequests_Status DEFAULT N'Pending',
+        RefundAmount DECIMAL(10,2) NOT NULL,
+        CreatedDate DATETIME NOT NULL CONSTRAINT DF_OrderReturnRequests_CreatedDate DEFAULT GETDATE(),
+        SellerConfirmedDate DATETIME NULL,
+        SellerConfirmedByUserId INT NULL,
+        RefundedDate DATETIME NULL,
+        CONSTRAINT FK_OrderReturnRequests_Order FOREIGN KEY (OrderId) REFERENCES Orders(OrderId),
+        CONSTRAINT FK_OrderReturnRequests_User FOREIGN KEY (UserId) REFERENCES Users(UserId),
+        CONSTRAINT FK_OrderReturnRequests_SellerConfirmedBy FOREIGN KEY (SellerConfirmedByUserId) REFERENCES Users(UserId)
+    );
+END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF NOT EXISTS (SELECT 1 FROM AdminBankAccounts)
+      BEGIN
+          INSERT INTO AdminBankAccounts (BankName, AccountNumber, AccountHolder, TransferNote, IsActive, UpdatedDate)
+          VALUES (N'Chưa cấu hình', N'0000000000', N'ADMIN NGUỒN VIỆT', N'Admin cập nhật tài khoản nhận tiền quảng cáo tại mục Quảng cáo.', 1, GETDATE());
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (33ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF NOT EXISTS (
+          SELECT 1
+          FROM sys.foreign_keys
+          WHERE name = 'FK_Products_Seller'
+      )
+      BEGIN
+          ALTER TABLE Products
+          ADD CONSTRAINT FK_Products_Seller
+          FOREIGN KEY (SellerId) REFERENCES Users(UserId);
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (50ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Roles] AS [r]
+              WHERE [r].[RoleName] = N'Admin') THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (19ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Roles] AS [r]
+              WHERE [r].[RoleName] = N'User') THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Roles] AS [r]
+              WHERE [r].[RoleName] = N'Seller') THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[RoleId]
+      FROM [Roles] AS [r]
+      WHERE [r].[RoleName] = N'Admin'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [u].[UserId], [u].[Address], [u].[CreatedDate], [u].[Email], [u].[FullName], [u].[PasswordHash], [u].[Phone], [u].[RoleId]
+      FROM [Users] AS [u]
+      WHERE [u].[Email] IS NOT NULL AND LOWER([u].[Email]) LIKE N'%admin%'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (23ms) [Parameters=[@__adminRoleId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Users] AS [u]
+              WHERE [u].[RoleId] = @__adminRoleId_Value_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (10ms) [Parameters=[@__statusName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]
+              WHERE [o].[StatusName] = @__statusName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@__statusName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]
+              WHERE [o].[StatusName] = @__statusName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__statusName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]
+              WHERE [o].[StatusName] = @__statusName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__statusName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]
+              WHERE [o].[StatusName] = @__statusName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__statusName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]
+              WHERE [o].[StatusName] = @__statusName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__statusName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]
+              WHERE [o].[StatusName] = @__statusName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__statusName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OrderStatus] AS [o]
+              WHERE [o].[StatusName] = @__statusName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [PaymentMethods] AS [p]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Regions] AS [r]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Categories] AS [c]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Vouchers] AS [v]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[CategoryId]
+      FROM [Categories] AS [c]
+      WHERE [c].[CategoryName] = N'Trà - cà phê'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[CategoryId]
+      FROM [Categories] AS [c]
+      WHERE [c].[CategoryName] = N'Bánh - kẹo'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[CategoryId]
+      FROM [Categories] AS [c]
+      WHERE [c].[CategoryName] = N'Mắm & gia vị'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[CategoryId]
+      FROM [Categories] AS [c]
+      WHERE [c].[CategoryName] = N'Khô - sấy'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[RegionId]
+      FROM [Regions] AS [r]
+      WHERE [r].[Province] = N'Hà Nội'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[RegionId]
+      FROM [Regions] AS [r]
+      WHERE [r].[Province] = N'Thừa Thiên Huế'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[RegionId]
+      FROM [Regions] AS [r]
+      WHERE [r].[Province] = N'TP. Hồ Chí Minh'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[RegionId]
+      FROM [Regions] AS [r]
+      WHERE [r].[Province] = N'Đắk Lắk'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[RegionId]
+      FROM [Regions] AS [r]
+      WHERE [r].[Province] = N'Cần Thơ'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+      FROM [Products] AS [p]
+      WHERE [p].[ProductName] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (13ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [ProductImages] AS [p]
+              WHERE [p].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Reviews] AS [r]
+              WHERE [r].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Reviews] AS [r]
+              WHERE [r].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Reviews] AS [r]
+              WHERE [r].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Reviews] AS [r]
+              WHERE [r].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__p_ProductId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Reviews] AS [r]
+              WHERE [r].[ProductId] = @__p_ProductId_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5056
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: D:\EXE\EXE\EXE
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (355ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[ProductId], [t].[AdvertisingBudget], [t].[AdvertisingDays], [t].[AdvertisingEndDate], [t].[AdvertisingPackageCode], [t].[AdvertisingPackageName], [t].[AdvertisingPaidDate], [t].[ApprovalStatus], [t].[CategoryId], [t].[CreatedDate], [t].[Description], [t].[OriginProofImageUrl], [t].[Price], [t].[ProductName], [t].[RegionId], [t].[SellerId], [t].[Stock], [t].[ViewCount], [r].[RegionId], [p0].[ImageId], [p0].[ImageUrl], [p0].[ProductId], [r].[Description], [r].[ImageUrl], [r].[Province], [r].[RegionName]
+      FROM (
+          SELECT TOP(@__p_0) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+          FROM [Products] AS [p]
+          WHERE [p].[ApprovalStatus] = N'Approved'
+          ORDER BY [p].[CreatedDate] DESC
+      ) AS [t]
+      LEFT JOIN [Regions] AS [r] ON [t].[RegionId] = [r].[RegionId]
+      LEFT JOIN [ProductImages] AS [p0] ON [t].[ProductId] = [p0].[ProductId]
+      ORDER BY [t].[CreatedDate] DESC, [t].[ProductId], [r].[RegionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (62ms) [Parameters=[@__p_1='?' (DbType = Int32), @__now_0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[ProductId], [t].[AdvertisingBudget], [t].[AdvertisingDays], [t].[AdvertisingEndDate], [t].[AdvertisingPackageCode], [t].[AdvertisingPackageName], [t].[AdvertisingPaidDate], [t].[ApprovalStatus], [t].[CategoryId], [t].[CreatedDate], [t].[Description], [t].[OriginProofImageUrl], [t].[Price], [t].[ProductName], [t].[RegionId], [t].[SellerId], [t].[Stock], [t].[ViewCount], [r].[RegionId], [p0].[ImageId], [p0].[ImageUrl], [p0].[ProductId], [r].[Description], [r].[ImageUrl], [r].[Province], [r].[RegionName]
+      FROM (
+          SELECT TOP(@__p_1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount], COALESCE([p].[AdvertisingBudget], 0.0) AS [c], COALESCE([p].[AdvertisingPaidDate], [p].[CreatedDate]) AS [c0]
+          FROM [Products] AS [p]
+          WHERE [p].[ApprovalStatus] = N'Approved' AND COALESCE([p].[AdvertisingBudget], 0.0) > 0.0 AND ([p].[AdvertisingEndDate] IS NULL OR [p].[AdvertisingEndDate] >= @__now_0)
+          ORDER BY COALESCE([p].[AdvertisingBudget], 0.0) DESC, COALESCE([p].[AdvertisingPaidDate], [p].[CreatedDate]) DESC
+      ) AS [t]
+      LEFT JOIN [Regions] AS [r] ON [t].[RegionId] = [r].[RegionId]
+      LEFT JOIN [ProductImages] AS [p0] ON [t].[ProductId] = [p0].[ProductId]
+      ORDER BY [t].[c] DESC, [t].[c0] DESC, [t].[ProductId], [r].[RegionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (23ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [r].[RegionId], [r].[Description], [r].[ImageUrl], [r].[Province], [r].[RegionName]
+      FROM [Regions] AS [r]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (65ms) [Parameters=[@__p_1='?' (DbType = Int32), @__region_RegionId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[ProductId], [t].[AdvertisingBudget], [t].[AdvertisingDays], [t].[AdvertisingEndDate], [t].[AdvertisingPackageCode], [t].[AdvertisingPackageName], [t].[AdvertisingPaidDate], [t].[ApprovalStatus], [t].[CategoryId], [t].[CreatedDate], [t].[Description], [t].[OriginProofImageUrl], [t].[Price], [t].[ProductName], [t].[RegionId], [t].[SellerId], [t].[Stock], [t].[ViewCount], [r].[RegionId], [p0].[ImageId], [p0].[ImageUrl], [p0].[ProductId], [r].[Description], [r].[ImageUrl], [r].[Province], [r].[RegionName]
+      FROM (
+          SELECT TOP(@__p_1) [p].[ProductId], [p].[AdvertisingBudget], [p].[AdvertisingDays], [p].[AdvertisingEndDate], [p].[AdvertisingPackageCode], [p].[AdvertisingPackageName], [p].[AdvertisingPaidDate], [p].[ApprovalStatus], [p].[CategoryId], [p].[CreatedDate], [p].[Description], [p].[OriginProofImageUrl], [p].[Price], [p].[ProductName], [p].[RegionId], [p].[SellerId], [p].[Stock], [p].[ViewCount]
+          FROM [Products] AS [p]
+          WHERE [p].[RegionId] = @__region_RegionId_0 AND [p].[ApprovalStatus] = N'Approved'
+          ORDER BY [p].[CreatedDate] DESC
+      ) AS [t]
+      LEFT JOIN [Regions] AS [r] ON [t].[RegionId] = [r].[RegionId]
+      LEFT JOIN [ProductImages] AS [p0] ON [t].[ProductId] = [p0].[ProductId]
+      ORDER BY [t].[CreatedDate] DESC, [t].[ProductId], [r].[RegionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (37ms) [Parameters=[@__p_1='?' (DbType = Int32), @__now_0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(@__p_1) [v].[VoucherId], [v].[CategoryId], [v].[Code], [v].[Description], [v].[DiscountFixed], [v].[DiscountPercent], [v].[ExpiryDate], [v].[IsActive], [v].[IsFreeShipping], [v].[MaxUses], [v].[MinOrderAmount], [v].[OccasionTag], [v].[RegionId], [v].[StartDate]
+      FROM [Vouchers] AS [v]
+      WHERE [v].[IsActive] = CAST(1 AS bit) AND ([v].[StartDate] IS NULL OR [v].[StartDate] <= @__now_0) AND ([v].[ExpiryDate] IS NULL OR [v].[ExpiryDate] >= @__now_0)
+      ORDER BY [v].[IsFreeShipping] DESC, COALESCE([v].[DiscountPercent], 0) DESC, COALESCE([v].[DiscountFixed], 0.0) DESC

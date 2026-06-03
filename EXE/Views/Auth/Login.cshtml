@@ -1,0 +1,148 @@
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Tài khoản</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+		<li class="breadcrumb-item active text-white">Đăng nhập</li>
+	</ol>
+</div>
+
+<div class="container-fluid py-5">
+	<div class="container py-4">
+		<style>
+			.nv-auth-shell { border-radius: 8px; border: 1px solid rgba(148,163,184,.35); background: #f8fafc; }
+			.nv-auth-card { border-radius: 8px; border: 1px solid rgba(148,163,184,.35); background: #fff; box-shadow: 0 .125rem .35rem rgba(15,23,42,.05); }
+			.nv-auth-card .form-control { border-radius: 8px; }
+			.nv-seller-register { border-left: 4px solid #0d6efd; }
+		</style>
+
+		<div class="row g-4 justify-content-center">
+			<div class="col-lg-11">
+				<div class="nv-auth-shell p-4 p-md-5">
+					@if (!string.IsNullOrWhiteSpace(ViewBag.Error))
+					{
+						<div class="alert alert-danger">@ViewBag.Error</div>
+					}
+					@if (!string.IsNullOrWhiteSpace(TempData["SellerAccessMessage"] as string))
+					{
+						<div class="alert alert-warning">@(TempData["SellerAccessMessage"] as string)</div>
+					}
+
+					<div class="row g-4 align-items-stretch">
+						<div class="col-md-6">
+							<div class="nv-auth-card p-4 h-100">
+								<div class="text-primary text-uppercase small fw-semibold mb-1">Đăng nhập</div>
+								<h3 class="mb-2">Chào mừng bạn quay lại</h3>
+								<p class="text-muted mb-4">Đăng nhập để mua hàng, theo dõi đơn và quản lý tài khoản.</p>
+
+								<form method="post" action="/Auth/Login">
+									<div class="mb-3">
+										<label class="form-label">Email</label>
+										<input type="email" name="email" class="form-control" placeholder="ban@email.com" required>
+									</div>
+									<div class="mb-3">
+										<label class="form-label">Mật khẩu</label>
+										<input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required>
+									</div>
+									<button type="submit" class="btn btn-primary w-100 py-3 rounded-pill">Đăng nhập</button>
+								</form>
+
+								<div class="text-center mt-3">
+									<small class="text-muted">Đăng nhập nhanh sẽ được bổ sung sau</small>
+								</div>
+								<div class="d-grid gap-2 mt-2">
+									<button type="button" class="btn btn-outline-secondary rounded-pill" disabled>
+										<i class="fab fa-google me-2"></i>Google
+									</button>
+									<button type="button" class="btn btn-outline-secondary rounded-pill" disabled>
+										<i class="fab fa-facebook-f me-2"></i>Facebook
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-md-6">
+							<div class="nv-auth-card p-4 h-100">
+								<div class="text-primary text-uppercase small fw-semibold mb-1">Khách hàng</div>
+								<h3 class="mb-2">Tạo tài khoản mua hàng</h3>
+								<p class="text-muted mb-4">Lưu giỏ hàng, theo dõi đơn và nhận ưu đãi từ Nguồn Việt.</p>
+
+								<form method="post" action="/Auth/Register">
+									<div class="mb-3">
+										<label class="form-label">Họ và tên</label>
+										<input type="text" name="fullName" class="form-control" placeholder="Nguyễn Văn A" required>
+									</div>
+									<div class="mb-3">
+										<label class="form-label">Email</label>
+										<input type="email" name="email" class="form-control" placeholder="ban@email.com" required>
+									</div>
+									<div class="row g-3">
+										<div class="col-md-6">
+											<label class="form-label">Mật khẩu</label>
+											<input type="password" name="password" class="form-control" required>
+										</div>
+										<div class="col-md-6">
+											<label class="form-label">Xác nhận mật khẩu</label>
+											<input type="password" name="confirmPassword" class="form-control" required>
+										</div>
+									</div>
+									<div class="mb-3 mt-3">
+										<label class="form-label">Mã giới thiệu <span class="text-muted small">(nếu có)</span></label>
+										<input type="text" name="referralCode" class="form-control" placeholder="Nhập mã từ bạn bè">
+									</div>
+									<button type="submit" class="btn btn-outline-primary w-100 py-3 rounded-pill">Đăng ký</button>
+								</form>
+							</div>
+						</div>
+					</div>
+
+					<div id="seller-register" class="nv-auth-card nv-seller-register p-4 mt-4">
+						<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+							<div>
+								<div class="text-primary text-uppercase small fw-semibold mb-1">Người bán</div>
+								<h3 class="mb-1">Đăng ký gian hàng</h3>
+								<p class="text-muted mb-0">Tạo tài khoản người bán để đăng sản phẩm đặc sản lên sàn và quản lý đơn hàng của shop.</p>
+							</div>
+							<span class="badge bg-primary rounded-pill px-3 py-2">Seller</span>
+						</div>
+
+						<form method="post" action="/Auth/RegisterSeller">
+							<div class="row g-3">
+								<div class="col-md-6">
+									<label class="form-label">Tên shop</label>
+									<input type="text" name="shopName" class="form-control" placeholder="Đặc sản Nhà Việt" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label">Tên chủ shop</label>
+									<input type="text" name="ownerName" class="form-control" placeholder="Nguyễn Văn A" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label">Email đăng nhập</label>
+									<input type="email" name="email" class="form-control" placeholder="shop@email.com" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label">Số điện thoại</label>
+									<input type="tel" name="phone" class="form-control" placeholder="0912 345 678">
+								</div>
+								<div class="col-12">
+									<label class="form-label">Địa chỉ lấy hàng</label>
+									<input type="text" name="address" class="form-control" placeholder="Số nhà, phường/xã, quận/huyện, tỉnh/thành">
+								</div>
+								<div class="col-md-6">
+									<label class="form-label">Mật khẩu</label>
+									<input type="password" name="password" class="form-control" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label">Xác nhận mật khẩu</label>
+									<input type="password" name="confirmPassword" class="form-control" required>
+								</div>
+							</div>
+							<button type="submit" class="btn btn-primary w-100 py-3 mt-4 rounded-pill">
+								<i class="fas fa-store me-2"></i>Tạo gian hàng
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

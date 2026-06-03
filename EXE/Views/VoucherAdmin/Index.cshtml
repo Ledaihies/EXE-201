@@ -1,0 +1,155 @@
+@model IEnumerable<EXE.Models.Voucher>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý mã ưu đãi";
+    var categories = ViewBag.Categories as List<EXE.Models.Category> ?? new();
+    var regions = ViewBag.Regions as List<EXE.Models.Region> ?? new();
+    var message = TempData["VoucherAdminMessage"] as string;
+    var error = TempData["VoucherAdminError"] as string;
+}
+
+<div class="container-fluid">
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-success border-0 shadow-sm">@message</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-warning border-0 shadow-sm">@error</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">Thêm mã giảm giá / free ship</h5>
+            <form method="post" action="/VoucherAdmin/Save" class="row g-3">
+                <input type="hidden" name="VoucherId" value="0">
+                <input type="hidden" name="IsActive" value="true">
+                <div class="col-md-2">
+                    <label class="form-label">Mã</label>
+                    <input name="Code" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Mô tả</label>
+                    <input name="Description" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">% giảm</label>
+                    <input name="DiscountPercent" type="number" min="0" max="100" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Giảm tiền</label>
+                    <input name="DiscountFixed" type="number" min="0" step="1000" class="form-control">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <label class="form-check mb-2">
+                        <input name="IsFreeShipping" value="true" class="form-check-input" type="checkbox">
+                        <span class="form-check-label">Mã miễn phí vận chuyển</span>
+                    </label>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Đơn tối thiểu</label>
+                    <input name="MinOrderAmount" type="number" min="0" step="1000" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Lượt dùng</label>
+                    <input name="MaxUses" type="number" min="0" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Bắt đầu</label>
+                    <input name="StartDate" type="datetime-local" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Hết hạn</label>
+                    <input name="ExpiryDate" type="datetime-local" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Danh mục</label>
+                    <select name="CategoryId" class="form-select">
+                        <option value="">Tất cả</option>
+                        @foreach (var c in categories)
+                        {
+                            <option value="@c.CategoryId">@c.CategoryName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Vùng</label>
+                    <select name="RegionId" class="form-select">
+                        <option value="">Tất cả</option>
+                        @foreach (var r in regions)
+                        {
+                            <option value="@r.RegionId">@r.RegionName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12 text-end">
+                    <button class="btn btn-primary rounded-pill px-4" type="submit">Thêm mã</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Danh sách mã do admin quản lý</h5>
+            <div class="vstack gap-3">
+                @foreach (var v in Model)
+                {
+                    <div class="border rounded bg-light p-3">
+                        <form method="post" action="/VoucherAdmin/Save" class="row g-2 align-items-end">
+                            <input type="hidden" name="VoucherId" value="@v.VoucherId">
+                            <div class="col-md-2">
+                                <label class="form-label small">Mã</label>
+                                <input name="Code" value="@v.Code" class="form-control form-control-sm fw-semibold">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Mô tả</label>
+                                <input name="Description" value="@v.Description" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-check small mb-1">
+                                    <input name="IsFreeShipping" value="true" type="checkbox" class="form-check-input" checked="@v.IsFreeShipping">
+                                    Free ship
+                                </label>
+                                <input name="DiscountPercent" type="number" min="0" max="100" value="@v.DiscountPercent" class="form-control form-control-sm" placeholder="% giảm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Giảm tiền</label>
+                                <input name="DiscountFixed" type="number" min="0" step="1000" value="@v.DiscountFixed" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Trạng thái</label>
+                                <select name="IsActive" class="form-select form-select-sm">
+                                    <option value="true" selected="@v.IsActive">Đang hoạt động</option>
+                                    <option value="false" selected="@(!v.IsActive)">Tắt</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Đơn tối thiểu</label>
+                                <input name="MinOrderAmount" type="number" min="0" step="1000" value="@v.MinOrderAmount" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Lượt dùng</label>
+                                <input name="MaxUses" type="number" min="0" value="@v.MaxUses" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Bắt đầu</label>
+                                <input name="StartDate" type="datetime-local" value="@(v.StartDate?.ToString("yyyy-MM-ddTHH:mm"))" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Hết hạn</label>
+                                <input name="ExpiryDate" type="datetime-local" value="@(v.ExpiryDate?.ToString("yyyy-MM-ddTHH:mm"))" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="submit">Lưu</button>
+                            </div>
+                        </form>
+                        <form method="post" action="/VoucherAdmin/Delete/@v.VoucherId" class="text-end mt-2" onsubmit="return confirm('Xóa mã này?');">
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit">Xóa</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

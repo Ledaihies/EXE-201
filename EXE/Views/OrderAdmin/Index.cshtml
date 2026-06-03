@@ -1,0 +1,67 @@
+@model IEnumerable<EXE.Models.Order>
+@{
+	Layout = "~/Views/Shared/_AdminLayout.cshtml";
+	ViewData["Title"] = "Quản lý đơn hàng";
+}
+
+<div class="container-fluid py-3">
+	<h2 class="mb-4">Quản lý đơn hàng</h2>
+
+	<div class="table-responsive bg-white rounded shadow-sm">
+		<table class="table mb-0">
+			<thead class="table-light">
+				<tr>
+					<th style="width:80px;">Mã</th>
+					<th>Khách hàng</th>
+					<th>Ngày đặt</th>
+					<th class="text-end">Tổng tiền</th>
+					<th>Thanh toán</th>
+					<th>Trạng thái</th>
+					<th style="width:120px;"></th>
+				</tr>
+			</thead>
+			<tbody>
+				@if (!Model.Any())
+				{
+					<tr>
+						<td colspan="7" class="text-center py-4 text-muted">
+							Chưa có đơn hàng nào.
+						</td>
+					</tr>
+				}
+				else
+				{
+					@foreach (var o in Model)
+					{
+						<tr>
+							<td>#@o.OrderId</td>
+							<td>@(o.User?.FullName ?? o.User?.Email ?? "Khách lẻ")</td>
+							<td>@(o.OrderDate?.ToString("dd/MM/yyyy HH:mm") ?? "")</td>
+							<td class="text-end">@String.Format("{0:N0}", o.TotalAmount ?? 0) đ</td>
+							<td>
+								@if (o.Payments.Any())
+								{
+									var payment = o.Payments.OrderByDescending(p => p.PaymentDate).First();
+									<span class="badge bg-success">Đã nhận @payment.PaymentMethod?.MethodName</span>
+								}
+								else
+								{
+									<span class="badge bg-warning text-dark">Chờ thanh toán</span>
+								}
+							</td>
+							<td>
+								<span class="badge bg-secondary">@o.Status?.StatusName</span>
+							</td>
+							<td class="text-end">
+								<a href="/OrderAdmin/Details/@o.OrderId" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+									Chi tiết
+								</a>
+							</td>
+						</tr>
+					}
+				}
+			</tbody>
+		</table>
+	</div>
+</div>
+

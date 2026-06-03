@@ -1,0 +1,87 @@
+@model EXE.ViewModels.AdvertisingBankTransferViewModel
+
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Thanh toán quảng cáo</h1>
+</div>
+
+@if (!Model.IsPaid)
+{
+	<script>
+		(() => {
+			const statusUrl = '@Url.Action("AdvertisingPaymentStatus", "Seller", new { id = Model.Request.RequestId })';
+			let checking = false;
+
+			const checkPayment = async () => {
+				if (checking) return;
+				checking = true;
+				try {
+					const response = await fetch(statusUrl, { cache: 'no-store' });
+					if (!response.ok) return;
+					const data = await response.json();
+					if (data.isPaid) {
+						window.location.reload();
+					}
+				} finally {
+					checking = false;
+				}
+			};
+
+			checkPayment();
+			setInterval(checkPayment, 2000);
+		})();
+	</script>
+}
+
+<div class="container py-5">
+	<div class="row justify-content-center">
+		<div class="col-lg-8">
+			<div class="card border-0 shadow-sm rounded-3">
+				<div class="card-body p-4 p-md-5">
+					@if (Model.IsPaid)
+					{
+						<div class="alert alert-success">
+							<i class="fas fa-check-circle me-2"></i>Hệ thống đã nhận tiền quảng cáo cho yêu cầu #@Model.Request.RequestId.
+						</div>
+					}
+					else
+					{
+						<div class="alert alert-warning">
+							<i class="fas fa-clock me-2"></i>Yêu cầu quảng cáo #@Model.Request.RequestId đang chờ chuyển khoản. Khi ngân hàng báo giao dịch, hệ thống sẽ tự xác nhận.
+						</div>
+					}
+
+					<div class="row g-4 align-items-center">
+						<div class="col-md-6 text-center">
+							<img src="@Model.QrUrl" class="img-fluid rounded-3 border" alt="VietQR quảng cáo #@Model.Request.RequestId" style="max-width: 360px;">
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<div class="text-muted small">Sản phẩm</div>
+								<div class="fw-semibold">@Model.Request.Product?.ProductName</div>
+							</div>
+							<div class="mb-3">
+								<div class="text-muted small">Gói quảng cáo</div>
+								<div class="fw-semibold">@Model.Request.PackageName</div>
+							</div>
+							<div class="mb-3">
+								<div class="text-muted small">Số tiền</div>
+								<div class="h4 text-primary mb-0">@String.Format("{0:N0}", Model.Request.Amount) đ</div>
+							</div>
+							<div class="mb-3">
+								<div class="text-muted small">Nội dung chuyển khoản</div>
+								<div class="fs-5 fw-bold">@Model.PaymentCode</div>
+							</div>
+							<div class="small text-muted mb-4">Vui lòng chuyển đúng số tiền và nội dung để SePay đối chiếu tự động.</div>
+							<a href="/Seller/AdvertisingPayment/@Model.Request.RequestId" class="btn btn-primary rounded-pill px-4">
+								<i class="fas fa-sync-alt me-2"></i>Kiểm tra lại
+							</a>
+							<a href="/Seller" class="btn btn-outline-secondary rounded-pill px-4 ms-2">
+								<i class="fas fa-store me-2"></i>Gian hàng
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

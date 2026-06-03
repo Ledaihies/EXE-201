@@ -1,0 +1,173 @@
+@model IEnumerable<EXE.Models.CartItem>
+@using EXE.Models
+@{
+	decimal subtotal = 0;
+	foreach (var x in Model)
+	{
+		var price = x.Product?.Price ?? 0;
+		var qty = x.Quantity ?? 0;
+		subtotal += price * qty;
+	}
+	decimal shippingFee = Model.Any() ? 25000 : 0;
+	var total = subtotal + shippingFee;
+	var suggested = ViewBag.SuggestedProducts as List<Product> ?? new List<Product>();
+}
+
+<!-- Single Page Header -->
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Giỏ hàng</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/" class="text-white-50">Trang chủ</a></li>
+		<li class="breadcrumb-item active text-white">Giỏ hàng</li>
+	</ol>
+</div>
+
+<!-- Cart Page -->
+<div class="container-fluid py-5 nv-cart-page">
+	@Html.AntiForgeryToken()
+	<div class="container">
+		<div class="row g-4">
+			<!-- Danh sách sản phẩm -->
+			<div class="col-lg-8">
+				@if (!Model.Any())
+				{
+					<div class="nv-cart-empty text-center py-5 px-4">
+						<div class="nv-cart-empty-icon mb-4">
+							<i class="fas fa-shopping-cart"></i>
+						</div>
+						<h4 class="mb-2">Giỏ hàng đang trống</h4>
+						<p class="text-muted mb-4">Bạn chưa thêm sản phẩm nào. Khám phá đặc sản vùng miền ngay!</p>
+						<a href="/Product" class="btn btn-primary rounded-pill px-5 py-3">
+							<i class="fas fa-store me-2"></i>Tiếp tục mua sắm
+						</a>
+					</div>
+				}
+				else
+				{
+					<div class="nv-cart-list">
+						@foreach (var item in Model)
+						{
+							var p = item.Product;
+							var image = p?.ProductImages?.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+							var price = p?.Price ?? 0;
+							var qty = item.Quantity ?? 0;
+							var lineTotal = price * qty;
+							var desc = (p?.Description ?? "").Length > 80 ? (p?.Description ?? "").Substring(0, 80) + "…" : (p?.Description ?? "");
+
+							<div class="nv-cart-card card border-0 shadow-sm rounded-3 mb-3 overflow-hidden" data-cart-item-id="@item.CartItemId">
+								<div class="card-body p-0">
+									<div class="row g-0 align-items-center">
+										<div class="col-4 col-md-3">
+											<a href="/Product/Details/@p?.ProductId" class="d-block nv-cart-card-img">
+												<img src="~/img/@image" class="img-fluid" alt="@p?.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+											</a>
+										</div>
+										<div class="col-8 col-md-9 p-3 p-md-4">
+											<div class="d-flex justify-content-between align-items-start gap-2">
+												<div class="flex-grow-1">
+													<a href="/Product/Details/@p?.ProductId" class="text-decoration-none text-dark fw-semibold h6 mb-1 d-block">@p?.ProductName</a>
+													@if (!string.IsNullOrWhiteSpace(desc))
+													{
+														<p class="text-muted small mb-0 nv-cart-desc" title="@p?.Description">@desc</p>
+													}
+												</div>
+												<button type="button" class="btn btn-link text-danger p-0 nv-cart-remove" data-id="@item.CartItemId" aria-label="Xoá">
+													<i class="fas fa-trash-alt"></i>
+												</button>
+											</div>
+											<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-2">
+												<div class="nv-cart-price text-primary fw-bold">@String.Format("{0:N0}", price) đ</div>
+												<div class="d-flex align-items-center gap-2">
+													<div class="input-group input-group-sm nv-cart-qty" style="width: 110px;">
+														<a class="btn btn-outline-secondary btn-sm nv-cart-dec" href="/Cart/Decrease/@item.CartItemId" data-id="@item.CartItemId"><i class="fas fa-minus"></i></a>
+														<span class="form-control text-center border nv-cart-qty-val">@qty</span>
+														<a class="btn btn-outline-secondary btn-sm nv-cart-inc" href="/Cart/Increase/@item.CartItemId" data-id="@item.CartItemId"><i class="fas fa-plus"></i></a>
+													</div>
+													<span class="text-primary fw-bold nv-cart-line-total" data-line-total="@lineTotal">@String.Format("{0:N0}", lineTotal) đ</span>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						}
+					</div>
+
+					<!-- Mã ưu đãi -->
+					<div class="nv-cart-voucher card border-0 shadow-sm rounded-3 p-4 mb-0">
+						<div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
+							<input type="text" class="form-control" id="voucherCode" placeholder="Nhập mã ưu đãi">
+							<button type="button" class="btn btn-outline-primary rounded-pill px-4" id="btnApplyVoucher">
+								<i class="fas fa-tag me-2"></i>Áp dụng
+							</button>
+						</div>
+						<div id="voucherMessage" class="small mt-2 text-muted"></div>
+					</div>
+				}
+			</div>
+
+			<!-- Sidebar tổng tiền - sticky -->
+			<div class="col-lg-4">
+				<div class="nv-cart-summary card border-0 shadow-sm rounded-3 sticky-top" style="top: 120px;">
+					<div class="card-body p-4">
+						<h5 class="mb-4">Tổng giỏ hàng</h5>
+						<div class="d-flex justify-content-between mb-3">
+							<span class="text-muted">Tạm tính:</span>
+							<span class="nv-cart-subtotal fw-semibold">@String.Format("{0:N0}", subtotal) đ</span>
+						</div>
+						<div class="d-flex justify-content-between mb-3">
+							<span class="text-muted">Vận chuyển:</span>
+							<span class="nv-cart-shipping fw-semibold">@String.Format("{0:N0}", shippingFee) đ</span>
+						</div>
+						<small class="text-muted d-block mb-3">Phí thực tế tính theo địa chỉ nhận hàng.</small>
+						<hr>
+						<div class="d-flex justify-content-between align-items-center mb-4">
+							<span class="fw-bold">Tổng:</span>
+							<span class="nv-cart-total fs-5 text-primary fw-bold">@String.Format("{0:N0}", total) đ</span>
+						</div>
+						<a href="/Checkout" class="btn btn-primary w-100 rounded-pill py-3 @(Model.Any() ? "" : "disabled")" id="btnCheckout">
+							<i class="fas fa-credit-card me-2"></i>Tiến hành thanh toán
+						</a>
+						<a href="/Product" class="btn btn-outline-secondary w-100 rounded-pill py-2 mt-2">
+							<i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		@if (Model.Any() && suggested.Any())
+		{
+			<div class="nv-cart-suggested mt-5 pt-5 border-top">
+				<h5 class="mb-4">Có thể bạn cũng thích</h5>
+				<div class="row g-4">
+					@foreach (var prod in suggested)
+					{
+						var img = prod.ProductImages?.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+						<div class="col-6 col-md-4 col-lg-2">
+							<div class="card border-0 shadow-sm h-100 rounded-3 overflow-hidden nv-cart-suggest-card">
+								<a href="/Product/Details/@prod.ProductId" class="d-block">
+									<div class="nv-cart-suggest-img" style="height:140px;overflow:hidden;">
+										<img src="~/img/@img" class="img-fluid w-100 h-100" style="object-fit:cover;" alt="@prod.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+									</div>
+									<div class="card-body p-2">
+										<h6 class="card-title small text-truncate mb-1">@prod.ProductName</h6>
+										<p class="text-primary fw-bold mb-0 small">@String.Format("{0:N0}", prod.Price ?? 0) đ</p>
+									</div>
+								</a>
+								<div class="card-footer border-0 bg-transparent p-2 d-flex gap-1">
+									<a href="/Cart/Add/@prod.ProductId" class="btn btn-sm btn-primary flex-grow-1 rounded-pill"><i class="fas fa-cart-plus"></i></a>
+									<button type="button" class="btn btn-sm btn-outline-secondary rounded-pill nv-save-for-later" data-product-id="@prod.ProductId" title="Lưu để mua sau"><i class="far fa-heart"></i></button>
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+		}
+	</div>
+</div>
+
+@section Scripts {
+	<script src="~/js/cart.js"></script>
+}

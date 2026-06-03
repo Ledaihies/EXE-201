@@ -1,0 +1,160 @@
+@model IEnumerable<EXE.Models.OrderItem>
+
+@{
+	ViewData["Title"] = "Đơn hàng của shop";
+	var items = (Model ?? Enumerable.Empty<EXE.Models.OrderItem>()).ToList();
+	var message = TempData["SellerMessage"] as string;
+	string StatusClass(string? status) => status switch
+	{
+		"Cho thanh toan" => "bg-secondary",
+		"Cho nguoi ban xac nhan" => "bg-warning text-dark",
+		"Cho lay hang" => "bg-info text-dark",
+		"Cho giao hang" => "bg-primary",
+		"Da nhan hang" => "bg-success",
+		"Da huy" => "bg-danger",
+		"Cho xac nhan hoan hang" => "bg-warning text-dark",
+		"Da hoan tien" => "bg-success",
+		_ => "bg-secondary"
+	};
+	string StatusLabel(string? status) => status switch
+	{
+		"Cho thanh toan" => "Cho thanh toan",
+		"Cho nguoi ban xac nhan" => "Chờ người bán xác nhận",
+		"Cho lay hang" => "Chờ lấy hàng",
+		"Cho giao hang" => "Đang vận chuyển",
+		"Da nhan hang" => "Đã nhận hàng",
+		"Da huy" => "Đã hủy",
+		"Cho xac nhan hoan hang" => "Chờ xác nhận hoàn hàng",
+		"Da hoan tien" => "Đã hoàn tiền",
+		_ => status ?? "Chưa cập nhật"
+	};
+}
+
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Đơn hàng của shop</h1>
+</div>
+
+<div class="container-fluid py-5">
+	<div class="container">
+		<style>
+			.nv-order-card { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; background: #fff; box-shadow: 0 .125rem .35rem rgba(15,23,42,.06); }
+			.nv-order-table td, .nv-order-table th { vertical-align: middle; }
+		</style>
+
+		<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+			<div>
+				<div class="text-primary text-uppercase small fw-semibold">Vận hành đơn hàng</div>
+				<h2 class="mb-1">Đơn hàng phát sinh</h2>
+				<p class="text-muted mb-0">Theo dõi các dòng hàng thuộc sản phẩm của gian hàng bạn.</p>
+			</div>
+			<a href="/Seller" class="btn btn-outline-secondary rounded-pill px-4">
+				<i class="fas fa-arrow-left me-2"></i>Quay lại
+			</a>
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(message))
+		{
+			<div class="alert alert-info border-0 shadow-sm">@message</div>
+		}
+
+		<div class="nv-order-card overflow-hidden">
+			<div class="table-responsive">
+				<table class="table mb-0 nv-order-table">
+					<thead class="table-light">
+						<tr>
+							<th style="width:110px;">Mã đơn</th>
+							<th>Sản phẩm</th>
+							<th>Khách hàng</th>
+							<th class="text-center" style="width:80px;">SL</th>
+							<th class="text-end" style="width:130px;">Đơn giá</th>
+							<th class="text-end" style="width:140px;">Thành tiền</th>
+							<th style="width:170px;">Trạng thái</th>
+							<th class="text-end" style="width:220px;">Thao tác</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (!items.Any())
+						{
+							<tr>
+								<td colspan="8" class="text-center text-muted py-5">Chưa có đơn hàng cho sản phẩm của shop.</td>
+							</tr>
+						}
+						else
+						{
+							@foreach (var item in items)
+							{
+								var qty = item.Quantity ?? 0;
+								var price = item.Price ?? 0;
+								var status = item.Order?.Status?.StatusName ?? "Cho nguoi ban xac nhan";
+								var latestReturn = item.Order?.ReturnRequests.OrderByDescending(r => r.CreatedDate).FirstOrDefault();
+								var tracking = item.Order?.OrderShippings.OrderByDescending(s => s.ShippingDate).FirstOrDefault()?.TrackingNumber;
+								<tr>
+									<td class="fw-bold">#@item.OrderId</td>
+									<td>
+										<div class="fw-semibold">@item.Product?.ProductName</div>
+										<div class="text-muted small">@item.Order?.OrderDate?.ToString("dd/MM/yyyy HH:mm")</div>
+									</td>
+									<td>
+										<div>@(item.Order?.User?.FullName ?? item.Order?.User?.Email ?? "Khách hàng")</div>
+										<div class="text-muted small text-truncate" style="max-width:260px;">@item.Order?.ShippingAddress</div>
+									</td>
+									<td class="text-center">@qty</td>
+									<td class="text-end">@String.Format("{0:N0}", price) đ</td>
+									<td class="text-end fw-semibold">@String.Format("{0:N0}", price * qty) đ</td>
+									<td>
+										<span class="badge @StatusClass(status)">@StatusLabel(status)</span>
+										@if (!string.IsNullOrWhiteSpace(tracking))
+										{
+											<div class="small text-muted mt-1">GHN: @tracking</div>
+										}
+										@if (latestReturn != null)
+										{
+											<div class="small text-muted mt-1">Hoàn hàng: @latestReturn.Status</div>
+										}
+									</td>
+									<td class="text-end">
+										<a href="/Seller/InvoicePdf/@item.OrderId" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-1" target="_blank">
+											<i class="fas fa-file-pdf me-1"></i>In hóa đơn
+										</a>
+										@if (status == "Cho nguoi ban xac nhan")
+										{
+											<form method="post" action="/Seller/ConfirmOrder/@item.OrderId" class="d-inline">
+												<input type="hidden" name="shippingChoice" value="pickup" />
+												<span class="small me-1">GHN den lay</span>
+												<button class="btn btn-sm btn-success rounded-pill px-3" type="submit">Xác nhận</button>
+											</form>
+											<form method="post" action="/Seller/ConfirmOrder/@item.OrderId" class="d-inline">
+												<input type="hidden" name="shippingChoice" value="dropoff" />
+												<button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="submit">Tu mang di gui</button>
+											</form>
+										}
+										else if (status == "Cho lay hang")
+										{
+											<form method="post" action="/Seller/HandOverOrder/@item.OrderId" class="d-inline">
+												<button class="btn btn-sm btn-primary rounded-pill px-3" type="submit">Đã giao vận chuyển</button>
+											</form>
+										}
+										else if (status == "Cho xac nhan hoan hang" && latestReturn?.Status == "Pending")
+										{
+											<div class="text-start small mb-2">
+												<div class="fw-semibold">Lý do hoàn hàng</div>
+												<div>@latestReturn.Reason</div>
+												<a href="/img/@latestReturn.ProofImageUrl" target="_blank">Xem ảnh minh chứng</a>
+											</div>
+											<form method="post" action="/Seller/ConfirmReturn/@item.OrderId" class="d-inline" onsubmit="return confirm('Xác nhận hoàn hàng và hoàn tiền cho người mua?');">
+												<button class="btn btn-sm btn-success rounded-pill px-3" type="submit">Duyệt hoàn</button>
+											</form>
+											<form method="post" action="/Seller/RejectReturn/@item.OrderId" class="d-inline" onsubmit="return confirm('Từ chối yêu cầu hoàn hàng này?');">
+												<button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit">Từ chối</button>
+											</form>
+										}
+									</td>
+								</tr>
+							}
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>

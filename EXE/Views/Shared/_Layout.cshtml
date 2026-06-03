@@ -1,0 +1,445 @@
+@using Microsoft.EntityFrameworkCore
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="utf-8">
+	<title>Nguồn Việt</title>
+	<meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+	<link href="~/css/bootstrap.min.css" rel="stylesheet">
+	<link href="~/css/style.css" rel="stylesheet">
+	<link href="~/css/chat.css" rel="stylesheet">
+
+	<link href="~/lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+	<link href="~/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+	<!-- Spinner -->
+	<div id="spinner"
+		 class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+
+		<div class="spinner-grow text-primary" role="status"></div>
+
+	</div>
+
+
+	<!-- Topbar -->
+	<div class="container-fluid fixed-top">
+
+		<div class="container topbar bg-primary d-none d-lg-block">
+
+			<div class="d-flex justify-content-between">
+
+				<div class="top-info ps-2">
+					<small class="me-4 text-white">
+						<i class="fas fa-map-marker-alt me-2" style="opacity:0.9"></i>
+						Giao hàng toàn quốc, kết nối đặc sản từ mọi vùng miền tới tận cửa nhà bạn
+					</small>
+					<small class="text-white">
+						<i class="fas fa-envelope me-2" style="opacity:0.9"></i>
+						hotro@nguonviet.vn
+					</small>
+				</div>
+				<div class="top-link pe-2">
+					<a href="#" class="text-white text-decoration-none"><small class="mx-2">Chính sách mua hàng & giao nhận</small></a>
+					<span class="text-white opacity-75">/</span>
+					<a href="#" class="text-white text-decoration-none"><small class="mx-2">Điều khoản sử dụng dịch vụ</small></a>
+					<span class="text-white opacity-75">/</span>
+					<a href="#" class="text-white text-decoration-none"><small class="mx-2">Chính sách đổi trả & hoàn tiền</small></a>
+				</div>
+
+			</div>
+
+		</div>
+
+
+		<!-- Navbar -->
+		<div class="container px-0">
+
+			<nav class="navbar navbar-light bg-white navbar-expand-xl">
+
+				<a href="/" class="navbar-brand">
+					<h1 class="text-primary display-6">Nguồn Việt</h1>
+				</a>
+
+				<button class="navbar-toggler py-2 px-3"
+						type="button"
+						data-bs-toggle="collapse"
+						data-bs-target="#navbarCollapse">
+
+					<span class="fa fa-bars text-primary"></span>
+
+				</button>
+
+				<div class="collapse navbar-collapse bg-white"
+					 id="navbarCollapse">
+
+					<div class="navbar-nav mx-auto">
+						<a href="/" class="nav-item nav-link">Trang chủ</a>
+						<a href="/Product" class="nav-item nav-link">Đặc sản</a>
+						<a href="/Seller" class="nav-item nav-link" data-seller-upgrade-prompt="@((Context.Session.GetInt32("UserId").HasValue && Context.Session.GetString("RoleName") != "Seller" && Context.Session.GetString("RoleName") != "Admin").ToString().ToLowerInvariant())">Kênh người bán</a>
+						<a href="/Game" class="nav-item nav-link">Trò chơi</a>
+						<a href="/Cart" class="nav-item nav-link">Giỏ hàng</a>
+						<a href="/Checkout" class="nav-item nav-link">Thanh toán</a>
+						<a href="/Contact" class="nav-item nav-link">Liên hệ</a>
+						@if (Context.Session.GetInt32("UserId") != null)
+						{
+							<a href="/Journey" class="nav-item nav-link">Hành trình</a>
+							<a href="/Account/MyOrders" class="nav-item nav-link">Hóa đơn</a>
+							<a href="/Account/Wallet" class="nav-item nav-link">Ví</a>
+							<a href="/Account/Edit" class="nav-item nav-link">Tài khoản</a>
+						}
+					</div>
+
+					<div class="nav-actions">
+
+						<button class="btn-search btn border border-secondary btn-md-square rounded-circle bg-white me-4"
+								data-bs-toggle="modal"
+								data-bs-target="#searchModal"
+								aria-label="Tìm kiếm">
+							<i class="fas fa-search text-primary"></i>
+						</button>
+
+						@inject EXE.Models.ApplicationDbContext Db
+						@{
+							var cartId = Context.Session.GetInt32("CartId");
+							var userId = Context.Session.GetInt32("UserId");
+							var roleName = Context.Session.GetString("RoleName") ?? string.Empty;
+							var fullName = Context.Session.GetString("FullName") ?? string.Empty;
+							var isBackoffice = string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase)
+								|| string.Equals(roleName, "Staff", StringComparison.OrdinalIgnoreCase)
+								|| string.Equals(roleName, "Seller", StringComparison.OrdinalIgnoreCase);
+
+							// Backward compatible: if older sessions only have UserId, infer role and name from DB.
+							if (userId.HasValue && (string.IsNullOrWhiteSpace(roleName) || string.IsNullOrWhiteSpace(fullName)))
+							{
+								var u = Db.Users
+									.Include(u => u.Role)
+									.FirstOrDefault(u => u.UserId == userId.Value);
+								if (string.IsNullOrWhiteSpace(roleName)) roleName = u?.Role?.RoleName ?? string.Empty;
+								if (string.IsNullOrWhiteSpace(fullName)) fullName = u?.FullName ?? u?.Email ?? "User";
+								isBackoffice = roleName == "Admin" || roleName == "Staff" || roleName == "Seller";
+							}
+
+							var cartCount = 0;
+							if (cartId.HasValue)
+							{
+								cartCount = Db.CartItems.Where(x => x.CartId == cartId.Value).Sum(x => (int?)(x.Quantity ?? 0)) ?? 0;
+							}
+							else if (userId.HasValue)
+							{
+								var uCartId = Db.Carts.Where(x => x.UserId == userId.Value).OrderByDescending(x => x.CreatedDate).Select(x => (int?)x.CartId).FirstOrDefault();
+								if (uCartId.HasValue)
+								{
+									cartCount = Db.CartItems.Where(x => x.CartId == uCartId.Value).Sum(x => (int?)(x.Quantity ?? 0)) ?? 0;
+								}
+							}
+						}
+
+						<a href="/Cart" class="position-relative me-4 my-auto" aria-label="Giỏ hàng">
+							<i class="fa fa-shopping-bag fa-2x"></i>
+							@if (cartCount > 0)
+							{
+								<span class="position-absolute bg-secondary rounded-circle d-flex align-items-center justify-content-center text-dark px-1"
+									  style="top:-5px; left:15px; height:20px; min-width:20px;">
+									@cartCount
+								</span>
+							}
+						</a>
+
+						@if (isBackoffice)
+						{
+							<div class="dropdown my-auto">
+								<a class="btn user-btn dropdown-toggle"
+								   href="#"
+								   role="button"
+								   data-bs-toggle="dropdown"
+								   aria-expanded="false">
+									<i class="fas fa-user-shield me-2"></i>Xin chào, @(fullName)
+								</a>
+								<ul class="dropdown-menu dropdown-menu-end">
+									@if (roleName == "Admin")
+									{
+										<li><a class="dropdown-item" href="/Admin">Bảng điều khiển admin</a></li>
+										<li><a class="dropdown-item" href="/ProductAdmin">Quản lý sản phẩm</a></li>
+										<li><a class="dropdown-item" href="/CategoryAdmin">Quản lý danh mục</a></li>
+										<li><a class="dropdown-item" href="/OrderAdmin">Quản lý đơn hàng</a></li>
+									}
+									else if (roleName == "Staff")
+									{
+										<li><a class="dropdown-item" href="/Staff">Bảng điều khiển staff</a></li>
+										<li><a class="dropdown-item" href="/StaffOrder">Đơn hàng</a></li>
+									}
+									else if (roleName == "Seller")
+									{
+										<li><a class="dropdown-item" href="/Seller">Kênh người bán</a></li>
+										<li><a class="dropdown-item" href="/Seller/Create">Đăng sản phẩm</a></li>
+										<li><a class="dropdown-item" href="/Seller/Orders">Đơn hàng của shop</a></li>
+									}
+									<li><hr class="dropdown-divider"></li>
+									<li><a class="dropdown-item" href="/Auth/Logout">Đăng xuất</a></li>
+								</ul>
+							</div>
+							<a href="/Auth/Logout" class="btn btn-link text-danger p-0 ms-2" title="Đăng xuất" aria-label="Đăng xuất">
+								<i class="fas fa-sign-out-alt"></i>
+							</a>
+						}
+						else if (Context.Session.GetInt32("UserId") != null)
+						{
+							<div class="dropdown d-flex align-items-center gap-2 my-auto">
+								@await Component.InvokeAsync("JourneyLevel")
+								<a class="btn user-btn dropdown-toggle"
+								   href="#"
+								   role="button"
+								   data-bs-toggle="dropdown"
+								   aria-expanded="false">
+									<i class="fas fa-user me-2"></i>Xin chào, @(fullName)
+								</a>
+								<ul class="dropdown-menu dropdown-menu-end">
+									<li><a class="dropdown-item" href="/Journey"><i class="fas fa-route me-2"></i>Hành trình đặc sản</a></li>
+									<li><a class="dropdown-item" href="/Account/MyOrders"><i class="fas fa-file-invoice-dollar me-2"></i>Hóa đơn của tôi</a></li>
+									<li><a class="dropdown-item" href="/Account/Wallet"><i class="fas fa-wallet me-2"></i>Ví điện tử</a></li>
+									<li><a class="dropdown-item" href="/Account/Edit"><i class="fas fa-user-edit me-2"></i>Tài khoản</a></li>
+									<li><hr class="dropdown-divider"></li>
+									<li><a class="dropdown-item" href="/Auth/Logout">Đăng xuất</a></li>
+								</ul>
+							</div>
+							<a href="/Auth/Logout" class="btn btn-link text-danger p-0 ms-2" title="Đăng xuất" aria-label="Đăng xuất">
+								<i class="fas fa-sign-out-alt"></i>
+							</a>
+						}
+						else
+						{
+							<a href="/Auth/Login" class="btn user-btn my-auto" aria-label="Đăng nhập">
+								<i class="fas fa-user me-2"></i>Đăng nhập
+							</a>
+						}
+
+					</div>
+
+				</div>
+
+			</nav>
+
+		</div>
+
+	</div>
+
+	<!-- Modal Search Start -->
+	<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-fullscreen">
+			<div class="modal-content rounded-0">
+				<div class="modal-header">
+					<h5 class="modal-title" id="searchModalLabel">Tìm kiếm</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body d-flex align-items-center">
+					<form class="input-group w-75 mx-auto d-flex" method="get" action="/Product">
+						<input type="search" class="form-control p-3" name="q" placeholder="Nhập tên đặc sản, địa phương..." aria-describedby="search-icon-1">
+						<button id="search-icon-1" class="input-group-text p-3" type="submit" aria-label="Tìm">
+							<i class="fa fa-search"></i>
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Modal Search End -->
+
+
+	<!-- Page Content -->
+	<div class="container-fluid mt-5 pt-5 px-0">
+
+		@RenderBody()
+
+	</div>
+
+
+	<!-- Footer -->
+	<div class="container-fluid bg-dark text-white-50 footer pt-5 mt-5">
+
+		<div class="container py-5">
+
+			<div class="pb-4 mb-4"
+				 style="border-bottom:1px solid rgba(255,255,255,0.1)">
+
+				<div class="row g-4">
+
+					<div class="col-lg-6">
+
+						<a href="#">
+							<h1 class="text-primary mb-0">Nguồn Việt</h1>
+							<p class="text-secondary mb-0">
+								Tinh hoa đặc sản vùng miền Việt Nam
+							</p>
+						</a>
+
+					</div>
+
+					<div class="col-lg-6">
+
+						<form class="position-relative mx-auto">
+							<input class="form-control border-0 w-100 py-3 px-4 rounded-pill"
+								   type="email"
+								   placeholder="Email của bạn">
+							<button type="submit"
+									class="btn btn-primary border-0 border-secondary py-3 px-4 position-absolute rounded-pill text-white"
+									style="top:0; right:0;">
+								Đăng ký
+							</button>
+						</form>
+
+					</div>
+
+				</div>
+
+			</div>
+
+
+			<div class="row g-5">
+
+				<div class="col-lg-3 col-md-6">
+
+					<div class="footer-item">
+
+						<h4 class="text-light mb-3">Nguồn Việt</h4>
+
+						<p>
+							Nguồn Việt là nền tảng thương mại điện tử chuyên sâu về đặc sản vùng miền Việt Nam,
+							kết nối trực tiếp với nhà sản xuất địa phương để mang đến sản phẩm chuẩn vị, rõ nguồn gốc
+							và trải nghiệm mua sắm thuận tiện, an toàn cho mọi khách hàng.
+						</p>
+
+					</div>
+
+				</div>
+
+
+				<div class="col-lg-3 col-md-6">
+
+					<div class="footer-item">
+
+						<h4 class="text-light mb-3">Liên kết</h4>
+
+						<a class="btn-link" href="/">Trang chủ</a>
+						<a class="btn-link" href="/Product">Sản phẩm</a>
+						<a class="btn-link" href="/Cart">Giỏ hàng</a>
+						<a class="btn-link" href="/Contact">Liên hệ</a>
+
+					</div>
+
+				</div>
+
+
+				<div class="col-lg-3 col-md-6">
+
+					<div class="footer-item">
+
+						<h4 class="text-light mb-3">Hỗ trợ & tư vấn</h4>
+
+						<p>Email: support@nguonviet.vn (08:00 – 22:00 mỗi ngày)</p>
+						<p>Hotline: 0900 123 456 – tư vấn lựa chọn đặc sản, hỗ trợ đơn hàng và giải đáp thắc mắc.</p>
+
+					</div>
+
+				</div>
+
+
+				<div class="col-lg-3 col-md-6">
+
+					<div class="footer-item">
+
+						<h4 class="text-light mb-3">Mạng xã hội</h4>
+
+						<i class="fab fa-facebook fa-2x me-3"></i>
+						<i class="fab fa-instagram fa-2x"></i>
+
+					</div>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<!-- Copyright Start -->
+	<div class="container-fluid copyright bg-dark py-4">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+					<span class="text-light">
+						<a href="#"><i class="fas fa-copyright text-light me-2"></i>Nguồn Việt</a>, Bảo lưu mọi quyền.
+					</span>
+				</div>
+				<div class="col-md-6 my-auto text-center text-md-end text-white">
+					Thiết kế bởi <a class="border-bottom" href="https://htmlcodex.com">HTML Codex</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Copyright End -->
+
+	<!-- Back to Top -->
+	<a href="#" class="btn btn-primary border-3 border-primary rounded-circle back-to-top"><i class="fa fa-arrow-up"></i></a>
+
+
+	<!-- JS -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script src="~/lib/easing/easing.min.js"></script>
+	<script src="~/lib/waypoints/waypoints.min.js"></script>
+	<script src="~/lib/owlcarousel/owl.carousel.min.js"></script>
+	<script src="~/lib/lightbox/js/lightbox.min.js"></script>
+	<script src="~/js/main.js"></script>
+	<script>
+		document.querySelectorAll('[data-seller-upgrade-prompt="true"]').forEach(function (link) {
+			link.addEventListener('click', function (event) {
+				var agree = confirm('Bạn chưa đăng ký tài khoản người bán. Bạn có muốn nâng cấp để mở tài khoản người bán không?');
+				if (!agree) {
+					event.preventDefault();
+					return;
+				}
+
+				event.preventDefault();
+				window.location.href = '/Auth/Login#seller-register';
+			});
+		});
+	</script>
+	<!-- Chatbox -->
+	<div id="chatbox" class="chatbox collapsed">
+		<div id="chatHeader" class="chat-header">
+			<div><i class="fas fa-comments me-2"></i>Hỗ trợ nhanh</div>
+			<div><small>Click để mở</small></div>
+		</div>
+		<div class="chat-body">
+			<div id="chatMessages" class="chat-messages"></div>
+			<div class="chat-input">
+				<input id="chatInput" type="text" class="form-control" placeholder="Nhập câu hỏi..." />
+				<button id="chatSend" class="btn btn-primary" type="button">Gửi</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="~/js/chat.js"></script>
+
+	@RenderSection("Scripts", required: false)
+
+</body>
+
+</html>

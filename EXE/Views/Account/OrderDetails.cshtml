@@ -1,0 +1,254 @@
+@model EXE.Models.Order
+@{
+	ViewData["Title"] = "Chi tiết đơn #" + Model.OrderId;
+	var items = (Model.OrderItems ?? new List<OrderItem>()).ToList();
+	var subtotal = items.Sum(it => (it.Price ?? 0) * (it.Quantity ?? 0));
+	var statusName = Model.Status?.StatusName ?? "Cho nguoi ban xac nhan";
+	var canCancel = statusName == "Cho nguoi ban xac nhan" || statusName == "Cho lay hang";
+	var canConfirmReceived = statusName == "Cho giao hang";
+	var canReview = statusName == "Da nhan hang";
+	var returnRequests = Model.ReturnRequests.OrderByDescending(r => r.CreatedDate).ToList();
+	var latestReturn = returnRequests.FirstOrDefault();
+	var canRequestReturn = statusName == "Da nhan hang" && !returnRequests.Any(r => r.Status == "Pending" || r.Status == "Approved");
+	var reviewedProductIds = ViewBag.ReviewedProductIds as List<int> ?? new List<int>();
+	var message = TempData["OrderMessage"] as string;
+	var steps = new[] { "Cho nguoi ban xac nhan", "Cho lay hang", "Cho giao hang", "Da nhan hang" };
+	var currentStep = Array.IndexOf(steps, statusName);
+	string StatusClass(string? status) => status switch
+	{
+		"Cho nguoi ban xac nhan" => "bg-warning text-dark",
+		"Cho lay hang" => "bg-info text-dark",
+		"Cho giao hang" => "bg-primary",
+		"Da nhan hang" => "bg-success",
+		"Da huy" => "bg-danger",
+		"Cho xac nhan hoan hang" => "bg-warning text-dark",
+		"Da hoan tien" => "bg-success",
+		_ => "bg-secondary"
+	};
+	string StatusLabel(string? status) => status switch
+	{
+		"Cho nguoi ban xac nhan" => "Chờ người bán xác nhận",
+		"Cho lay hang" => "Chờ lấy hàng",
+		"Cho giao hang" => "Đang vận chuyển",
+		"Da nhan hang" => "Đã nhận hàng",
+		"Da huy" => "Đã hủy",
+		"Cho xac nhan hoan hang" => "Chờ xác nhận hoàn hàng",
+		"Da hoan tien" => "Đã hoàn tiền",
+		_ => status ?? "Chưa cập nhật"
+	};
+}
+
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Chi tiết đơn hàng #@Model.OrderId</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+		<li class="breadcrumb-item"><a href="/Account/MyOrders">Đơn hàng của tôi</a></li>
+		<li class="breadcrumb-item active text-white">#@Model.OrderId</li>
+	</ol>
+</div>
+
+<div class="container-fluid py-5">
+	<div class="container">
+		<style>
+			.nv-detail-card { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; background: #fff; box-shadow: 0 .125rem .35rem rgba(15,23,42,.06); }
+			.nv-muted { color: #64748b; }
+			.nv-step { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; padding: 14px; height: 100%; background: #fff; }
+			.nv-step.active { background: rgba(13,110,253,.06); border-color: rgba(13,110,253,.25); }
+			.nv-review-box { background: #f8fafc; border: 1px solid rgba(148,163,184,.35); border-radius: 8px; padding: 12px; }
+		</style>
+
+		<div class="mb-4">
+			<a href="/Account/MyOrders" class="btn btn-outline-secondary rounded-pill px-4">
+				<i class="fas fa-arrow-left me-2"></i>Quay lại danh sách
+			</a>
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(message))
+		{
+			<div class="alert alert-info border-0 shadow-sm">@message</div>
+		}
+
+		<div class="nv-detail-card p-4 p-md-5 mb-4">
+			<div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+				<div>
+					<div class="text-primary text-uppercase small fw-semibold">Đơn hàng</div>
+					<h2 class="h4 fw-bold mb-1">Đơn hàng #@Model.OrderId</h2>
+					<div class="nv-muted"><i class="far fa-clock me-1"></i>@(Model.OrderDate?.ToString("dd/MM/yyyy HH:mm") ?? "")</div>
+				</div>
+				<div class="text-end">
+					<div class="mb-2"><span class="badge @StatusClass(statusName)">@StatusLabel(statusName)</span></div>
+					<div class="nv-muted">Tổng thanh toán</div>
+					<div class="h3 text-primary fw-bold mb-0">@String.Format("{0:N0}", Model.TotalAmount ?? 0) đ</div>
+				</div>
+			</div>
+
+			<div class="mt-4">
+				<div class="fw-bold mb-2">Trạng thái giao hàng</div>
+				<div class="row g-2">
+					@for (var i = 0; i < steps.Length; i++)
+					{
+						var active = currentStep >= i;
+						<div class="col-6 col-md-3">
+							<div class="nv-step @(active ? "active" : "")">
+								<div class="fw-semibold">@StatusLabel(steps[i])</div>
+								<div class="small text-muted">@(active ? "Đã hoàn tất" : "Đang chờ")</div>
+							</div>
+						</div>
+					}
+				</div>
+				@if (statusName == "Da huy")
+				{
+					<div class="alert alert-danger mt-3 mb-0">Đơn hàng đã bị hủy.</div>
+				}
+				@if (latestReturn != null)
+				{
+					<div class="alert alert-warning mt-3 mb-0">
+						<div class="fw-bold">Yêu cầu hoàn hàng: @latestReturn.Status</div>
+						<div>Lý do: @latestReturn.Reason</div>
+						<div class="small text-muted">Số tiền hoàn: @String.Format("{0:N0}", latestReturn.RefundAmount) đ</div>
+						@if (!string.IsNullOrWhiteSpace(latestReturn.ProofImageUrl))
+						{
+							<a href="/img/@latestReturn.ProofImageUrl" target="_blank" class="small">Xem ảnh minh chứng</a>
+						}
+					</div>
+				}
+			</div>
+
+			<div class="d-flex flex-wrap gap-2 mt-4">
+				@if (canCancel)
+				{
+					<form method="post" action="/Account/CancelOrder/@Model.OrderId" onsubmit="return confirm('Bạn chắc chắn muốn hủy đơn hàng này?');">
+						@Html.AntiForgeryToken()
+						<button type="submit" class="btn btn-outline-danger rounded-pill px-4">Hủy đơn hàng</button>
+					</form>
+				}
+				@if (canConfirmReceived)
+				{
+					<form method="post" action="/Account/ConfirmReceived/@Model.OrderId">
+						@Html.AntiForgeryToken()
+						<button type="submit" class="btn btn-success rounded-pill px-4">Xác nhận đã nhận hàng</button>
+					</form>
+				}
+			</div>
+
+			@if (canRequestReturn)
+			{
+				<div class="nv-review-box mt-4">
+					<div class="fw-bold mb-2">Yêu cầu hoàn hàng</div>
+					<form method="post" action="/Account/RequestReturn/@Model.OrderId" enctype="multipart/form-data">
+						@Html.AntiForgeryToken()
+						<div class="mb-3">
+							<label class="form-label">Lý do hoàn hàng</label>
+							<textarea name="reason" class="form-control" rows="3" maxlength="1000" required></textarea>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Ảnh minh chứng</label>
+							<input type="file" name="proofImage" class="form-control" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" required />
+						</div>
+						<button type="submit" class="btn btn-outline-danger rounded-pill px-4">Gửi yêu cầu hoàn hàng</button>
+					</form>
+				</div>
+			}
+
+			<hr class="my-4">
+
+			<div class="row g-4">
+				<div class="col-lg-7">
+					<div class="fw-bold mb-2">Thông tin giao hàng</div>
+					<div class="nv-muted">Địa chỉ</div>
+					<div class="fw-semibold">@Model.ShippingAddress</div>
+				</div>
+				<div class="col-lg-5">
+					<div class="fw-bold mb-2">Tóm tắt thanh toán</div>
+					<div class="d-flex justify-content-between mb-2">
+						<div class="nv-muted">Tạm tính</div>
+						<div class="fw-semibold">@String.Format("{0:N0}", subtotal) đ</div>
+					</div>
+					<div class="d-flex justify-content-between mb-2">
+						<div class="nv-muted">Phí vận chuyển</div>
+						<div class="fw-semibold">@String.Format("{0:N0}", Model.ShippingFee ?? Math.Max(0m, (Model.TotalAmount ?? 0) - subtotal)) đ</div>
+					</div>
+					<div class="d-flex justify-content-between pt-2 border-top">
+						<div class="fw-bold">Tổng cộng</div>
+						<div class="fw-bold">@String.Format("{0:N0}", Model.TotalAmount ?? 0) đ</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="nv-detail-card p-4 p-md-5">
+			<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+				<h5 class="mb-0">Sản phẩm trong đơn</h5>
+				<div class="nv-muted small">@items.Count dòng</div>
+			</div>
+			<div class="table-responsive">
+				<table class="table align-middle mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>Sản phẩm</th>
+							<th class="text-center" style="width:90px;">SL</th>
+							<th class="text-end" style="width:140px;">Đơn giá</th>
+							<th class="text-end" style="width:160px;">Thành tiền</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var it in items)
+						{
+							var name = it.Product?.ProductName ?? $"SP #{it.ProductId}";
+							var qty = it.Quantity ?? 0;
+							var price = it.Price ?? 0;
+							var line = price * qty;
+							<tr>
+								<td>
+									<div class="fw-semibold">@name</div>
+									<div class="nv-muted small">Mã SP: @it.ProductId</div>
+									@if (canReview && it.ProductId.HasValue)
+									{
+										if (reviewedProductIds.Contains(it.ProductId.Value))
+										{
+											<div class="small text-success mt-2">Bạn đã đánh giá sản phẩm này.</div>
+										}
+										else
+										{
+											<form method="post" action="/Account/ReviewProduct" class="nv-review-box mt-3">
+												@Html.AntiForgeryToken()
+												<input type="hidden" name="orderId" value="@Model.OrderId" />
+												<input type="hidden" name="productId" value="@it.ProductId" />
+												<div class="row g-2">
+													<div class="col-sm-3">
+														<select name="rating" class="form-select form-select-sm">
+															<option value="5">5 sao</option>
+															<option value="4">4 sao</option>
+															<option value="3">3 sao</option>
+															<option value="2">2 sao</option>
+															<option value="1">1 sao</option>
+														</select>
+													</div>
+													<div class="col-sm-7">
+														<input name="comment" class="form-control form-control-sm" placeholder="Nhận xét sản phẩm">
+													</div>
+													<div class="col-sm-2">
+														<button type="submit" class="btn btn-sm btn-primary w-100">Gửi</button>
+													</div>
+												</div>
+											</form>
+										}
+									}
+								</td>
+								<td class="text-center fw-semibold">@qty</td>
+								<td class="text-end">@String.Format("{0:N0}", price) đ</td>
+								<td class="text-end fw-bold">@String.Format("{0:N0}", line) đ</td>
+							</tr>
+						}
+					</tbody>
+					<tfoot>
+						<tr>
+							<td colspan="3" class="text-end fw-bold">Tổng cộng</td>
+							<td class="text-end fw-bold">@String.Format("{0:N0}", Model.TotalAmount ?? 0) đ</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>

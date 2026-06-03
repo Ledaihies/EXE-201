@@ -1,0 +1,247 @@
+@model IEnumerable<EXE.Models.Product>
+
+@{
+    ViewData["Title"] = "Kênh người bán";
+    var products = (Model ?? Enumerable.Empty<EXE.Models.Product>()).ToList();
+    var message = TempData["SellerMessage"] as string;
+    var productCount = (int?)ViewBag.ProductCount ?? products.Count;
+    var approvedProductCount = (int?)ViewBag.ApprovedProductCount ?? products.Count(p => p.ApprovalStatus == "Approved");
+    var pendingProductCount = (int?)ViewBag.PendingProductCount ?? products.Count(p => p.ApprovalStatus != "Approved" && p.ApprovalStatus != "Rejected");
+    var totalStock = (int?)ViewBag.TotalStock ?? products.Sum(p => p.Stock ?? 0);
+    var orderCount = (int?)ViewBag.OrderCount ?? 0;
+    var completedOrderCount = (int?)ViewBag.CompletedOrderCount ?? 0;
+    var pendingOrderCount = (int?)ViewBag.PendingOrderCount ?? 0;
+    var pickupOrderCount = (int?)ViewBag.PickupOrderCount ?? 0;
+    var shippingOrderCount = (int?)ViewBag.ShippingOrderCount ?? 0;
+    var cancelledOrderCount = (int?)ViewBag.CancelledOrderCount ?? 0;
+    var totalViews = (int?)ViewBag.TotalViews ?? products.Sum(p => p.ViewCount ?? 0);
+    var totalRevenue = ViewBag.TotalRevenue as decimal? ?? 0m;
+    var totalShippingRefund = ViewBag.TotalShippingRefund as decimal? ?? 0m;
+    var advertisingTotal = ViewBag.AdvertisingTotal as decimal? ?? 0m;
+    string sellerBankName = ViewBag.SellerBankName ?? string.Empty;
+    string sellerBankAccountNumber = ViewBag.SellerBankAccountNumber ?? string.Empty;
+    string sellerBankAccountName = ViewBag.SellerBankAccountName ?? string.Empty;
+    string sellerBankBranch = ViewBag.SellerBankBranch ?? string.Empty;
+    DateTime? sellerBankUpdatedDate = ViewBag.SellerBankUpdatedDate as DateTime?;
+    string chartLabelsJson = ViewBag.ChartLabelsJson ?? "[]";
+    string revenueDataJson = ViewBag.RevenueDataJson ?? "[]";
+    string viewDataJson = ViewBag.ViewDataJson ?? "[]";
+    string StatusLabel(string? status) => status switch
+    {
+        "Approved" => "Đang bán",
+        "Rejected" => "Bị từ chối",
+        "Deleted" => "Đã ẩn",
+        _ => "Chờ duyệt"
+    };
+    string StatusClass(string? status) => status switch
+    {
+        "Approved" => "bg-success",
+        "Rejected" => "bg-danger",
+        "Deleted" => "bg-secondary",
+        _ => "bg-warning text-dark"
+    };
+}
+
+<style>
+    .seller-page { background: #f6f8fb; }
+    .seller-shell { max-width: 1320px; }
+    .seller-head { background: #ffffff; border-bottom: 1px solid #d7dee8; }
+    .seller-card { background: #fff; border: 1px solid #d7dee8; border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    .seller-kpi { padding: 18px; min-height: 116px; }
+    .seller-kpi .label { color: #64748b; font-size: .8rem; font-weight: 700; text-transform: uppercase; }
+    .seller-kpi .value { color: #111827; font-size: 1.65rem; font-weight: 800; line-height: 1.15; }
+    .seller-kpi .hint { color: #64748b; font-size: .84rem; }
+    .seller-status { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .seller-status-item { padding: 12px; border: 1px solid #dbe3ee; border-radius: 8px; background: #fff; }
+    .seller-status-item .num { font-size: 1.35rem; font-weight: 800; }
+    .seller-chart { height: 260px; padding: 16px; }
+    .seller-chart canvas { height: 195px !important; max-height: 195px; }
+    .seller-thumb { width: 58px; height: 58px; object-fit: cover; border-radius: 8px; border: 1px solid #d7dee8; }
+    .seller-table th { font-size: .78rem; color: #475569; text-transform: uppercase; }
+    .seller-table td, .seller-table th { vertical-align: middle; }
+    .seller-actions .btn { margin-bottom: 4px; }
+    .seller-bank-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    @@media (max-width: 992px) { .seller-status { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @@media (max-width: 992px) { .seller-bank-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @@media (max-width: 576px) { .seller-status, .seller-bank-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="seller-page">
+    <div class="seller-head py-4">
+        <div class="container seller-shell">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <div class="text-primary text-uppercase small fw-bold">Kênh người bán</div>
+                    <h1 class="h3 mb-1">Kênh người bán</h1>
+                    <div class="text-muted">Quản lý sản phẩm, tồn kho, đơn hàng, quảng cáo và doanh thu đã hoàn tất.</div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="/Seller/Orders" class="btn btn-outline-primary px-4">Đơn hàng</a>
+                    <a href="/Seller/Create" class="btn btn-primary px-4">Thêm sản phẩm</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container seller-shell py-4">
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="alert alert-info border-0 shadow-sm">@message</div>
+        }
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6 col-xl-3"><div class="seller-card seller-kpi"><div class="label">Doanh thu người bán</div><div class="value">@String.Format("{0:N0}", totalRevenue + totalShippingRefund) đ</div><div class="hint">Gồm @String.Format("{0:N0}", totalShippingRefund) đ phí ship admin hoàn</div></div></div>
+            <div class="col-md-6 col-xl-3"><div class="seller-card seller-kpi"><div class="label">Sản phẩm</div><div class="value">@productCount</div><div class="hint">@approvedProductCount đang bán, @pendingProductCount chờ duyệt</div></div></div>
+            <div class="col-md-6 col-xl-3"><div class="seller-card seller-kpi"><div class="label">Tồn kho</div><div class="value">@totalStock</div><div class="hint">Tổng số lượng còn lại</div></div></div>
+            <div class="col-md-6 col-xl-3"><div class="seller-card seller-kpi"><div class="label">Quảng cáo đã mua</div><div class="value">@String.Format("{0:N0}", advertisingTotal) đ</div><div class="hint">@totalViews lượt xem sản phẩm</div></div></div>
+        </div>
+
+        <div class="seller-card p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Tai khoan ngan hang nhan tien</h2>
+                    <div class="text-muted small">
+                        Admin se dung thong tin nay de chuyen tien cho nguoi ban.
+                        @if (sellerBankUpdatedDate.HasValue)
+                        {
+                            <span>Cap nhat lan cuoi: @sellerBankUpdatedDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <form method="post" action="/Seller/UpdateBankAccount">
+                <div class="seller-bank-grid">
+                    <div>
+                        <label class="form-label small text-muted mb-1">Ten ngan hang</label>
+                        <input name="bankName" value="@sellerBankName" maxlength="120" class="form-control" required />
+                    </div>
+                    <div>
+                        <label class="form-label small text-muted mb-1">So tai khoan</label>
+                        <input name="bankAccountNumber" value="@sellerBankAccountNumber" maxlength="50" class="form-control" required />
+                    </div>
+                    <div>
+                        <label class="form-label small text-muted mb-1">Ten chu tai khoan</label>
+                        <input name="bankAccountName" value="@sellerBankAccountName" maxlength="150" class="form-control" required />
+                    </div>
+                    <div>
+                        <label class="form-label small text-muted mb-1">Chi nhanh / ghi chu</label>
+                        <input name="bankBranch" value="@sellerBankBranch" maxlength="150" class="form-control" />
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary px-4">Luu tai khoan ngan hang</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="seller-card p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 class="h5 mb-0">Trạng thái đơn hàng</h2>
+                <a href="/Seller/Orders" class="btn btn-sm btn-outline-primary">Xử lý đơn</a>
+            </div>
+            <div class="seller-status">
+                <div class="seller-status-item"><div class="text-muted small">Tất cả</div><div class="num">@orderCount</div></div>
+                <div class="seller-status-item"><div class="text-muted small">Chờ xác nhận</div><div class="num text-warning">@pendingOrderCount</div></div>
+                <div class="seller-status-item"><div class="text-muted small">Chờ lấy/gửi</div><div class="num text-info">@pickupOrderCount</div></div>
+                <div class="seller-status-item"><div class="text-muted small">Đang vận chuyển</div><div class="num text-primary">@shippingOrderCount</div></div>
+                <div class="seller-status-item"><div class="text-muted small">Hoàn tất / Hủy</div><div class="num"><span class="text-success">@completedOrderCount</span> / <span class="text-danger">@cancelledOrderCount</span></div></div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-6"><div class="seller-card seller-chart"><div class="d-flex justify-content-between mb-2"><h2 class="h6 mb-0">Sản phẩm có doanh thu cao</h2><span class="badge bg-primary">8 sản phẩm</span></div><canvas id="sellerRevenueChart"></canvas></div></div>
+            <div class="col-lg-6"><div class="seller-card seller-chart"><div class="d-flex justify-content-between mb-2"><h2 class="h6 mb-0">Sản phẩm có lượt xem cao</h2><span class="badge bg-success">8 sản phẩm</span></div><canvas id="sellerViewsChart"></canvas></div></div>
+        </div>
+
+        <div class="seller-card overflow-hidden">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="h5 mb-0">Danh sách sản phẩm</h2>
+                <a href="/Seller/Create" class="btn btn-sm btn-primary">Thêm sản phẩm</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table mb-0 seller-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th class="text-end">Giá</th>
+                            <th class="text-center">Tồn</th>
+                            <th class="text-center">Lượt xem</th>
+                            <th class="text-end">Quảng cáo</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!products.Any())
+                        {
+                            <tr><td colspan="7" class="text-center text-muted py-5">Chưa có sản phẩm trong gian hàng.</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var item in products)
+                            {
+                                var image = item.ProductImages?.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+                                var status = item.ApprovalStatus ?? "Pending";
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="~/img/@image" class="seller-thumb" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+                                            <div>
+                                                <div class="fw-semibold">@item.ProductName</div>
+                                                <div class="small text-muted">#@item.ProductId - @item.Category?.CategoryName @item.Region?.RegionName</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-semibold">@String.Format("{0:N0}", item.Price ?? 0) đ</td>
+                                    <td class="text-center">@((item.Stock ?? 0))</td>
+                                    <td class="text-center">@((item.ViewCount ?? 0))</td>
+                                    <td class="text-end">
+                                        @if ((item.AdvertisingBudget ?? 0) > 0)
+                                        {
+                                            <div class="fw-semibold">@String.Format("{0:N0}", item.AdvertisingBudget ?? 0) đ</div>
+                                            <div class="small text-muted">@item.AdvertisingPackageName</div>
+                                        }
+                                        else { <span class="text-muted small">Không</span> }
+                                    </td>
+                                    <td><span class="badge @StatusClass(status)">@StatusLabel(status)</span></td>
+                                    <td class="text-end seller-actions">
+                                        <a href="/Product/Details/@item.ProductId" class="btn btn-sm btn-outline-primary">Xem</a>
+                                        <a href="/Seller/Edit/@item.ProductId" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                                        <form method="post" action="/Seller/Delete/@item.ProductId" class="d-inline" onsubmit="return confirm('Xóa hoặc ẩn sản phẩm này?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const sellerChartLabels = @Html.Raw(chartLabelsJson);
+        const sellerRevenueData = @Html.Raw(revenueDataJson);
+        const sellerViewData = @Html.Raw(viewDataJson);
+        const revenueCtx = document.getElementById('sellerRevenueChart');
+        if (revenueCtx) {
+            new Chart(revenueCtx, {
+                type: 'bar',
+                data: { labels: sellerChartLabels, datasets: [{ label: 'Doanh thu', data: sellerRevenueData, backgroundColor: '#2563eb', borderRadius: 5, maxBarThickness: 34 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+            });
+        }
+        const viewsCtx = document.getElementById('sellerViewsChart');
+        if (viewsCtx) {
+            new Chart(viewsCtx, {
+                type: 'line',
+                data: { labels: sellerChartLabels, datasets: [{ label: 'Lượt xem', data: sellerViewData, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.12)', fill: true, tension: .32 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } } }
+            });
+        }
+    </script>
+}

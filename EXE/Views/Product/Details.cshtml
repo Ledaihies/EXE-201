@@ -1,0 +1,246 @@
+@model Product
+@using EXE.Models
+@{
+	ViewData["Title"] = Model.ProductName + " | Nguồn Việt";
+	var image = Model.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+	var regionName = Model.Region?.RegionName ?? "Đặc sản vùng miền";
+	var related = ViewBag.RelatedProducts as List<Product> ?? new List<Product>();
+	var reviews = ViewBag.Reviews as List<Review> ?? new List<Review>();
+	var avgRating = ViewBag.AvgRating as double? ?? 0;
+	var reviewCount = (int)(ViewBag.ReviewCount ?? 0);
+	var stock = Model.Stock ?? 0;
+	var inStock = stock > 0;
+}
+
+<!-- Page header -->
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">@Model.ProductName</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+		<li class="breadcrumb-item"><a href="/Product">Đặc sản</a></li>
+		<li class="breadcrumb-item active text-white">Chi tiết</li>
+	</ol>
+</div>
+
+<div class="container py-5">
+	<div class="row g-5 align-items-start">
+		<div class="col-lg-5">
+			<div class="border rounded-4 overflow-hidden shadow-sm bg-white">
+				<img src="~/img/@image"
+					 class="img-fluid w-100"
+					 style="max-height:420px; object-fit:cover"
+					 alt="@Model.ProductName"
+					 onerror="this.onerror=null;this.src='/img/no-image.svg';" />
+			</div>
+		</div>
+
+		<div class="col-lg-7">
+			<div class="bg-white border rounded-4 p-4 p-md-5 shadow-sm h-100 d-flex flex-column">
+				<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+					<span class="badge rounded-pill text-bg-warning text-uppercase fw-semibold">
+						@regionName
+					</span>
+					@if (inStock)
+					{
+						<span class="badge rounded-pill bg-success">Còn hàng</span>
+						if (stock < 20)
+						{
+							<span class="small text-muted">Chỉ còn @stock sản phẩm</span>
+						}
+					}
+					else
+					{
+						<span class="badge rounded-pill bg-secondary">Tạm hết hàng</span>
+					}
+				</div>
+
+				<h2 class="mb-3">@Model.ProductName</h2>
+
+				@if (reviewCount > 0)
+				{
+					<div class="d-flex align-items-center gap-2 mb-2">
+						<span class="text-warning small">
+							@for (var i = 1; i <= 5; i++)
+							{
+								<i class="fa fa-star@(i <= Math.Round(avgRating) ? "" : "-o")"></i>
+							}
+						</span>
+						<span class="text-muted small">@avgRating.ToString("F1") (@reviewCount đánh giá)</span>
+					</div>
+				}
+
+				<div class="mb-3">
+					<span class="h3 text-primary fw-bold">
+						@String.Format("{0:N0}", Model.Price ?? 0) đ
+					</span>
+				</div>
+
+				@if (!string.IsNullOrWhiteSpace(Model.Description))
+				{
+					<p class="text-muted mb-4" style="white-space:pre-line;">@Model.Description</p>
+				}
+
+				
+
+				@if (inStock)
+				{
+					<form method="get" action="/Cart/Add/@Model.ProductId" class="d-flex flex-wrap align-items-center gap-3 mb-3">
+						<label class="d-flex align-items-center gap-2 mb-0">
+							<span class="small text-muted me-2">Số lượng:</span>
+							<input type="number" name="quantity" value="1" min="1" max="@stock" class="form-control form-control-lg" style="width: 90px;" />
+						</label>
+						<button type="submit" class="btn btn-primary btn-lg rounded-pill px-4">
+							<i class="fa fa-shopping-bag me-2"></i>Thêm vào giỏ
+						</button>
+					</form>
+				}
+				<div class="d-flex flex-wrap align-items-center gap-3">
+					<a href="/Product" class="btn btn-outline-secondary rounded-pill px-4">
+						<i class="fa fa-arrow-left me-2"></i>Quay lại danh sách
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+@if (reviews.Any())
+{
+	<div class="container pb-4">
+		<div class="bg-white border rounded-4 p-4 shadow-sm">
+			<h4 class="mb-4">Đánh giá (@reviewCount)</h4>
+			<div class="list-unstyled mb-0">
+				@foreach (var r in reviews.Take(10))
+				{
+					<div class="border-bottom pb-3 mb-3">
+						<div class="d-flex align-items-center gap-2 mb-1">
+							<span class="text-warning small">
+								@for (var i = 1; i <= 5; i++)
+								{
+									<i class="fa fa-star@(i <= (r.Rating ?? 0) ? "" : "-o")"></i>
+								}
+							</span>
+							<span class="small text-muted">@(r.User?.FullName ?? "Khách") · @(r.CreatedDate?.ToString("dd/MM/yyyy") ?? "")</span>
+						</div>
+						<p class="mb-0 text-muted small">@r.Comment</p>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+}
+
+@if (related.Any())
+{
+	<section class="nv-related-section py-5">
+		<div class="container">
+			<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+				<h2 class="h4 mb-0 fw-bold text-dark">Gợi ý đặc sản khác</h2>
+				<a href="/Product" class="btn btn-outline-primary btn-sm rounded-pill px-3 text-nowrap">
+					Xem thêm đặc sản <i class="fa fa-arrow-right ms-1 small"></i>
+				</a>
+			</div>
+
+			<div class="row g-4">
+				@foreach (var item in related)
+				{
+					var rImage = item.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+					var rRegion = item.Region?.RegionName ?? "Đặc sản";
+
+					<div class="col-6 col-md-4 col-lg-3">
+						<div class="nv-product-card nv-product-card--grid nv-product-card--related card h-100 border-0 shadow-sm">
+							<div class="nv-product-card__img-wrap position-relative">
+								<a href="/Product/Details/@item.ProductId" class="d-block h-100">
+									<img src="~/img/@rImage"
+										 class="nv-product-card__img"
+										 alt="@item.ProductName"
+										 onerror="this.onerror=null;this.src='/img/no-image.svg';">
+								</a>
+								<span class="nv-product-card__region">@rRegion</span>
+							</div>
+							<div class="card-body d-flex flex-column p-3">
+								<a href="/Product/Details/@item.ProductId" class="text-decoration-none text-dark">
+									<h5 class="card-title nv-product-card__title mb-2">@item.ProductName</h5>
+									<p class="card-text text-muted small nv-product-card__desc mb-0">@item.Description</p>
+								</a>
+							</div>
+							<div class="card-footer border-0 bg-transparent pt-0 px-3 pb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+								<span class="text-primary fw-bold">@String.Format("{0:N0}", item.Price ?? 0) đ</span>
+								<div class="d-flex align-items-center gap-2">
+									<a href="/Product/Details/@item.ProductId" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Xem</a>
+									<a href="/Cart/Add/@item.ProductId" class="btn btn-sm btn-primary rounded-pill px-3" title="Thêm vào giỏ">
+										<i class="fa fa-cart-plus"></i>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	</section>
+}
+
+<!-- Feedback nổi bật cho sản phẩm này (hiển thị ngay cả khi chưa có đánh giá thật trong hệ thống) -->
+<section class="nv-testimonial-section py-5 bg-light">
+	<div class="container">
+		<div class="text-center mb-4">
+			<span class="text-secondary text-uppercase small fw-semibold" style="letter-spacing:.12em;">Cảm nhận về sản phẩm</span>
+			<h2 class="h4 fw-bold text-dark mt-2 mb-0">Khách hàng nói gì về @Model.ProductName</h2>
+			<p class="text-muted small mb-0">Một vài phản hồi tiêu biểu từ khách đã mua đặc sản này trên Nguồn Việt.</p>
+		</div>
+		<div class="row g-4 justify-content-center">
+			<div class="col-md-6 col-lg-4">
+				<div class="nv-testimonial-card card border-0 shadow-sm h-100">
+					<div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small">
+							<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>
+						</div>
+						<p class="nv-testimonial-card__text mb-4">Hương vị chuẩn đặc sản, ăn rất vừa miệng. Gia đình mình khen món @Model.ProductName này nhiều lần.</p>
+						<div class="d-flex align-items-center gap-3">
+							<div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:48px;height:48px;font-weight:700;">H</div>
+							<div>
+								<div class="fw-semibold">Hoàng Minh</div>
+								<div class="small text-muted">Khách hàng đã mua 2+ lần</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6 col-lg-4">
+				<div class="nv-testimonial-card card border-0 shadow-sm h-100">
+					<div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small">
+							<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star-half-o"></i>
+						</div>
+						<p class="nv-testimonial-card__text mb-4">Mình đặt làm quà gửi cho người thân ở xa, đóng gói rất cẩn thận, mở ra thấy thơm là biết hàng chất lượng.</p>
+						<div class="d-flex align-items-center gap-3">
+							<div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:48px;height:48px;font-weight:700;">T</div>
+							<div>
+								<div class="fw-semibold">Trần Thu</div>
+								<div class="small text-muted">Mua làm quà biếu</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6 col-lg-4">
+				<div class="nv-testimonial-card card border-0 shadow-sm h-100">
+					<div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small">
+							<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>
+						</div>
+						<p class="nv-testimonial-card__text mb-4">Giao hàng nhanh, còn hướng dẫn cách bảo quản và chế biến rất chi tiết. Sẽ tiếp tục đặt @Model.ProductName lần sau.</p>
+						<div class="d-flex align-items-center gap-3">
+							<div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:48px;height:48px;font-weight:700;">L</div>
+							<div>
+								<div class="fw-semibold">Lê Quốc</div>
+								<div class="small text-muted">Khách hàng</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
