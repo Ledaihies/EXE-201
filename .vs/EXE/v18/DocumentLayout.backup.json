@@ -1,0 +1,92 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Project-Freelancer\\EXE-201-FU\\EXE-201\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{2D1AFAFE-8231-4F4C-9C20-58C21846A3A2}|EXE\\EXE.csproj|d:\\project-freelancer\\exe-201-fu\\exe-201\\exe\\views\\cart\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{2D1AFAFE-8231-4F4C-9C20-58C21846A3A2}|EXE\\EXE.csproj|solutionrelative:exe\\views\\cart\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2D1AFAFE-8231-4F4C-9C20-58C21846A3A2}|EXE\\EXE.csproj|d:\\project-freelancer\\exe-201-fu\\exe-201\\exe\\controllers\\cartcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2D1AFAFE-8231-4F4C-9C20-58C21846A3A2}|EXE\\EXE.csproj|solutionrelative:exe\\controllers\\cartcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2D1AFAFE-8231-4F4C-9C20-58C21846A3A2}|EXE\\EXE.csproj|d:\\project-freelancer\\exe-201-fu\\exe-201\\exe\\services\\banktransferservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2D1AFAFE-8231-4F4C-9C20-58C21846A3A2}|EXE\\EXE.csproj|solutionrelative:exe\\services\\banktransferservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "D:\\Project-Freelancer\\EXE-201-FU\\EXE-201\\EXE\\Views\\Cart\\Index.cshtml",
+              "RelativeDocumentMoniker": "EXE\\Views\\Cart\\Index.cshtml",
+              "ToolTip": "D:\\Project-Freelancer\\EXE-201-FU\\EXE-201\\EXE\\Views\\Cart\\Index.cshtml",
+              "RelativeToolTip": "EXE\\Views\\Cart\\Index.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAA9AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-06-04T14:27:21.536Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CartController.cs",
+              "DocumentMoniker": "D:\\Project-Freelancer\\EXE-201-FU\\EXE-201\\EXE\\Controllers\\CartController.cs",
+              "RelativeDocumentMoniker": "EXE\\Controllers\\CartController.cs",
+              "ToolTip": "D:\\Project-Freelancer\\EXE-201-FU\\EXE-201\\EXE\\Controllers\\CartController.cs",
+              "RelativeToolTip": "EXE\\Controllers\\CartController.cs",
+              "ViewState": "AgIAAF8AAAAAAAAAAAAMwIYAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-04T14:24:56.528Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "BankTransferService.cs",
+              "DocumentMoniker": "D:\\Project-Freelancer\\EXE-201-FU\\EXE-201\\EXE\\Services\\BankTransferService.cs",
+              "RelativeDocumentMoniker": "EXE\\Services\\BankTransferService.cs",
+              "ToolTip": "D:\\Project-Freelancer\\EXE-201-FU\\EXE-201\\EXE\\Services\\BankTransferService.cs",
+              "RelativeToolTip": "EXE\\Services\\BankTransferService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-04T14:24:56.648Z"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 389,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
