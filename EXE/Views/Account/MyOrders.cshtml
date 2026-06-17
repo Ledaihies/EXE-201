@@ -1,0 +1,154 @@
+@model IEnumerable<EXE.Models.Order>
+@{
+	ViewData["Title"] = "Đơn hàng của tôi";
+	var orders = (Model ?? Enumerable.Empty<EXE.Models.Order>()).OrderByDescending(o => o.OrderDate ?? DateTime.MinValue).ToList();
+	string StatusClass(string? status) => status switch
+	{
+		"Cho nguoi ban xac nhan" => "bg-warning text-dark",
+		"Cho lay hang" => "bg-info text-dark",
+		"Cho giao hang" => "bg-primary",
+		"Da nhan hang" => "bg-success",
+		"Da huy" => "bg-danger",
+		"Cho xac nhan hoan hang" => "bg-warning text-dark",
+		"Da hoan tien" => "bg-success",
+		_ => "bg-secondary"
+	};
+	string StatusLabel(string? status) => status switch
+	{
+		"Cho nguoi ban xac nhan" => "Chờ người bán xác nhận",
+		"Cho lay hang" => "Chờ lấy hàng",
+		"Cho giao hang" => "Đang vận chuyển",
+		"Da nhan hang" => "Đã nhận hàng",
+		"Da huy" => "Đã hủy",
+		"Cho xac nhan hoan hang" => "Chờ xác nhận hoàn hàng",
+		"Da hoan tien" => "Đã hoàn tiền",
+		_ => status ?? "Chưa cập nhật"
+	};
+}
+
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Đơn hàng của tôi</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+		<li class="breadcrumb-item active text-white">Theo dõi đơn hàng</li>
+	</ol>
+</div>
+
+<div class="container-fluid py-5">
+	<div class="container">
+		<style>
+			.nv-order-card { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; background: #fff; box-shadow: 0 .125rem .35rem rgba(15,23,42,.06); }
+			.nv-order-kpi { padding: 16px 18px; }
+			.nv-order-table td, .nv-order-table th { vertical-align: middle; }
+		</style>
+
+		<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+			<div>
+				<div class="text-primary text-uppercase small fw-semibold">Theo dõi mua hàng</div>
+				<h2 class="mb-1">Lịch sử đơn hàng</h2>
+				<p class="text-muted mb-0">Xem tiến trình giao hàng, hủy đơn khi còn cho phép và xác nhận đã nhận hàng.</p>
+			</div>
+			<a href="/Product" class="btn btn-outline-primary rounded-pill px-4">
+				<i class="fas fa-shopping-bag me-2"></i>Mua sắm
+			</a>
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(TempData["OrderMessage"] as string))
+		{
+			<div class="alert alert-info border-0 shadow-sm">@(TempData["OrderMessage"] as string)</div>
+		}
+
+		<div class="row g-3 mb-4">
+			<div class="col-md-4">
+				<div class="nv-order-card nv-order-kpi">
+					<div class="text-muted small">Tổng đơn</div>
+					<div class="h3 fw-bold mb-0">@orders.Count</div>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="nv-order-card nv-order-kpi">
+					<div class="text-muted small">Tổng chi tiêu</div>
+					<div class="h3 fw-bold mb-0">@String.Format("{0:N0}", orders.Sum(o => o.TotalAmount ?? 0)) đ</div>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="nv-order-card nv-order-kpi">
+					<div class="text-muted small">Đang giao</div>
+					<div class="h3 fw-bold mb-0">@orders.Count(o => o.Status?.StatusName == "Cho giao hang")</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="nv-order-card overflow-hidden">
+			<div class="table-responsive">
+				<table class="table mb-0 nv-order-table">
+					<thead class="table-light">
+						<tr>
+							<th style="width:120px;">Mã đơn</th>
+							<th>Thời gian</th>
+							<th class="text-end">Tổng tiền</th>
+							<th>Trạng thái</th>
+							<th class="text-end" style="width:280px;">Thao tác</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (!orders.Any())
+						{
+							<tr>
+								<td colspan="5" class="text-center py-5 text-muted">
+									<i class="fas fa-file-invoice fa-2x mb-3 d-block text-secondary"></i>
+									Bạn chưa có đơn hàng nào.
+									<br>
+									<a href="/Product" class="btn btn-outline-primary mt-3 rounded-pill px-4">Mua sắm ngay</a>
+								</td>
+							</tr>
+						}
+						else
+						{
+							@foreach (var o in orders)
+							{
+								var statusName = o.Status?.StatusName ?? "N/A";
+								var href = $"/Account/OrderDetails/{o.OrderId}";
+								var canCancel = statusName == "Cho nguoi ban xac nhan" || statusName == "Cho lay hang";
+								var canConfirmReceived = statusName == "Cho giao hang";
+								var latestReturn = o.ReturnRequests.OrderByDescending(r => r.CreatedDate).FirstOrDefault();
+								<tr>
+									<td><a href="@href" class="fw-bold text-dark text-decoration-none">#@o.OrderId</a></td>
+									<td>
+										<div class="fw-semibold">@(o.OrderDate?.ToString("dd/MM/yyyy") ?? "")</div>
+										<div class="text-muted small">@(o.OrderDate?.ToString("HH:mm") ?? "")</div>
+									</td>
+									<td class="text-end fw-bold">@String.Format("{0:N0}", o.TotalAmount ?? 0) đ</td>
+									<td>
+										<span class="badge @StatusClass(statusName)">@StatusLabel(statusName)</span>
+										@if (latestReturn != null)
+										{
+											<div class="small text-muted mt-1">Hoàn hàng: @latestReturn.Status</div>
+										}
+									</td>
+									<td class="text-end">
+										<a href="@href" class="btn btn-sm btn-primary rounded-pill px-3">Chi tiết</a>
+										@if (canCancel)
+										{
+											<form method="post" action="/Account/CancelOrder/@o.OrderId" class="d-inline" onsubmit="return confirm('Bạn chắc chắn muốn hủy đơn hàng này?');">
+												@Html.AntiForgeryToken()
+												<button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Hủy</button>
+											</form>
+										}
+										@if (canConfirmReceived)
+										{
+											<form method="post" action="/Account/ConfirmReceived/@o.OrderId" class="d-inline">
+												@Html.AntiForgeryToken()
+												<button type="submit" class="btn btn-sm btn-success rounded-pill px-3">Đã nhận</button>
+											</form>
+										}
+									</td>
+								</tr>
+							}
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>

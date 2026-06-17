@@ -1,0 +1,67 @@
+@model EXE.Models.User
+@{
+	ViewData["Title"] = "Chỉnh sửa tài khoản";
+}
+
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Tài khoản của tôi</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+		<li class="breadcrumb-item active text-white">Tài khoản</li>
+	</ol>
+</div>
+
+<div class="container-fluid py-5">
+	<div class="container">
+		<div class="row justify-content-center">
+			<div class="col-lg-8 col-xl-6">
+				<div class="bg-light rounded p-4 p-md-5">
+					@if (TempData["Success"] != null)
+					{
+						<div class="alert alert-success">@TempData["Success"]</div>
+					}
+
+					<h3 class="mb-4">Chỉnh sửa thông tin</h3>
+
+					<form method="post" action="/Account/Edit">
+						@Html.AntiForgeryToken()
+						<input type="hidden" name="userId" value="@Model.UserId" />
+
+						<div class="mb-3">
+							<label class="form-label">Họ và tên</label>
+							<input type="text" name="fullName" class="form-control" value="@Model.FullName" required />
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">Email</label>
+							<input type="email" class="form-control" value="@Model.Email" disabled readonly />
+							<small class="text-muted">Email không thể thay đổi.</small>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">Số điện thoại</label>
+							<input type="text" name="phone" class="form-control" value="@Model.Phone" placeholder="0912 345 678" />
+						</div>
+
+						<div class="mb-4">
+							<label class="form-label">Địa chỉ</label>
+							<textarea name="address" class="form-control" rows="3" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">@Model.Address</textarea>
+						</div>
+
+						<button type="submit" class="btn btn-primary w-100 py-3 rounded-pill">
+							<i class="fas fa-save me-2"></i>Lưu thay đổi
+						</button>
+					</form>
+
+					@* Chương trình giới thiệu bạn bè đã được gỡ bỏ *@
+
+					<div class="mt-4 pt-3 border-top">
+						<a href="/Account/MyOrders" class="btn btn-outline-secondary rounded-pill">
+							<i class="fas fa-file-invoice-dollar me-2"></i>Xem hóa đơn của tôi
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

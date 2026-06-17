@@ -1,0 +1,85 @@
+@model EXE.Models.Wallet
+@{
+    ViewData["Title"] = "Ví điện tử";
+    var message = TempData["WalletMessage"] as string;
+}
+
+<style>
+    .wallet-shell { max-width: 980px; }
+    .wallet-card { background: #fff; border: 1px solid #d7dee8; border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.06); }
+    .wallet-balance { font-size: 2rem; font-weight: 800; color: #0f172a; }
+    .wallet-table td, .wallet-table th { vertical-align: middle; }
+</style>
+
+<div class="container py-5 wallet-shell">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div>
+            <div class="text-primary text-uppercase small fw-bold">Ví điện tử</div>
+            <h1 class="h3 mb-1">Ví điện tử</h1>
+            <div class="text-muted">Nạp tiền qua QR admin, thanh toán đơn hàng và nhận tiền hoàn về ví.</div>
+        </div>
+        <a href="/Account/MyOrders" class="btn btn-outline-secondary">Đơn hàng của tôi</a>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-info">@message</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-5">
+            <div class="wallet-card p-4 h-100">
+                <div class="text-muted small text-uppercase fw-bold mb-2">Số dư hiện tại</div>
+                <div class="wallet-balance">@String.Format("{0:N0}", Model.Balance) đ</div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="wallet-card p-4 h-100">
+                <h2 class="h5 mb-3">Nạp tiền vào ví</h2>
+                <form method="post" action="/Account/TopUpWallet" class="row g-2">
+                    @Html.AntiForgeryToken()
+                    <div class="col-sm-8">
+                        <input type="number" name="amount" min="1000" step="1000" class="form-control form-control-lg" placeholder="Nhập số tiền" required />
+                    </div>
+                    <div class="col-sm-4">
+                        <button class="btn btn-primary btn-lg w-100" type="submit">Tạo QR</button>
+                    </div>
+                </form>
+                <div class="small text-muted mt-2">Hệ thống sẽ tạo mã QR chuyển khoản vào tài khoản admin. Sau khi giao dịch được xác nhận, tiền sẽ được cộng vào ví.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wallet-card table-responsive">
+        <table class="table mb-0 wallet-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Loại</th>
+                    <th>Nội dung</th>
+                    <th class="text-end">Số tiền</th>
+                    <th class="text-end">Số dư sau giao dịch</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Transactions.Any())
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-4">Chưa có giao dịch ví.</td></tr>
+                }
+                else
+                {
+                    foreach (var t in Model.Transactions)
+                    {
+                        <tr>
+                            <td>@t.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="badge @(t.Amount >= 0 ? "bg-success" : "bg-primary")">@t.Type</span></td>
+                            <td>@t.Description</td>
+                            <td class="text-end fw-semibold @(t.Amount >= 0 ? "text-success" : "text-danger")">@String.Format("{0:N0}", t.Amount) đ</td>
+                            <td class="text-end">@String.Format("{0:N0}", t.BalanceAfter) đ</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

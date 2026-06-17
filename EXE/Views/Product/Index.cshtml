@@ -1,0 +1,874 @@
+@model IEnumerable<EXE.Models.Product>
+
+@{
+	var regions = ViewBag.Regions as List<EXE.Models.Region> ?? new();
+	var categories = ViewBag.Categories as List<EXE.Models.Category> ?? new();
+	var q = (string?)ViewBag.Query;
+	int? regionId = ViewBag.RegionId as int?;
+	int? categoryId = ViewBag.CategoryId as int?;
+	var occasion = (string?)ViewBag.Occasion;
+	decimal? minPrice = ViewBag.MinPrice as decimal?;
+	decimal? maxPrice = ViewBag.MaxPrice as decimal?;
+	var sort = (string?)ViewBag.Sort;
+	int currentPage = ViewBag.Page ?? 1;
+	int totalPages = ViewBag.TotalPages ?? 1;
+
+	string BuildQueryWithoutPrice()
+	{
+		var qs = new List<string>();
+		if (!string.IsNullOrWhiteSpace(q)) qs.Add($"q={Uri.EscapeDataString(q)}");
+		if (regionId.HasValue) qs.Add($"regionId={regionId}");
+		if (categoryId.HasValue) qs.Add($"categoryId={categoryId}");
+		if (!string.IsNullOrWhiteSpace(occasion)) qs.Add($"occasion={Uri.EscapeDataString(occasion)}");
+		if (!string.IsNullOrWhiteSpace(sort)) qs.Add($"sort={sort}");
+		var queryString = qs.Count > 0 ? "?" + string.Join("&", qs) : string.Empty;
+		return queryString;
+	}
+}
+
+<!-- Single Page Header start -->
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Đặc sản vùng miền</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+		<li class="breadcrumb-item active text-white">Đặc sản</li>
+	</ol>
+</div>
+<!-- Single Page Header End -->
+
+<!-- Product Marketplace Start-->
+<div class="container-fluid fruite py-5">
+	<div class="container py-5">
+		<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+			<div>
+				<h1 class="mb-2">Chợ đặc sản Việt Nam</h1>
+				<p class="text-muted mb-0">
+					Khám phá kho đặc sản chuẩn vị quê nhà, dễ dàng lọc theo vùng miền, danh mục, mức giá
+					và nhu cầu sử dụng để tìm ra món quà, món ăn phù hợp nhất cho bạn và người thân.
+				</p>
+			</div>
+			<div class="text-md-end small text-muted">
+				@if (!Model.Any())
+				{
+					<span>Không tìm thấy sản phẩm phù hợp.</span>
+				}
+				else
+				{
+					<span>Đang hiển thị @Model.Count() sản phẩm trên trang @currentPage / @totalPages.</span>
+				}
+			</div>
+		</div>
+
+		<div class="row g-4 nv-market-layout">
+			<!-- Sidebar: Filters -->
+			<div class="col-lg-3 nv-market-sidebar-col">
+				<div class="nv-filter-sidebar">
+					<div class="card border-0 shadow-sm mb-4">
+						<div class="card-body p-4">
+							<h5 class="mb-3 d-flex justify-content-between align-items-center">
+								<span>Bộ lọc</span>
+								<a href="/Product" class="small text-decoration-none text-secondary">Xóa lọc</a>
+							</h5>
+
+							<!-- Search -->
+							<form class="nv-filter-search mb-4" method="get" action="/Product">
+								<div class="input-group">
+									<span class="input-group-text bg-white border-end-0">
+										<i class="fa fa-search text-muted"></i>
+									</span>
+									<input type="search"
+										   class="form-control border-start-0"
+										   name="q"
+										   value="@q"
+										   placeholder="Tìm tên sản phẩm / địa phương..." />
+									@if (regionId.HasValue)
+									{
+										<input type="hidden" name="regionId" value="@regionId" />
+									}
+									@if (categoryId.HasValue)
+									{
+										<input type="hidden" name="categoryId" value="@categoryId" />
+									}
+									@if (!string.IsNullOrWhiteSpace(sort))
+									{
+										<input type="hidden" name="sort" value="@sort" />
+									}
+									@if (currentPage > 1)
+									{
+										<input type="hidden" name="page" value="@currentPage" />
+									}
+								</div>
+								@if (!string.IsNullOrWhiteSpace(q))
+								{
+									<div class="small text-muted mt-2">
+										Từ khóa: <span class="badge bg-light text-dark">@q</span>
+									</div>
+								}
+							</form>
+
+							<!-- Price range filter -->
+							<div class="mb-4">
+								<div class="d-flex justify-content-between align-items-center mb-2">
+									<h6 class="mb-0">Khoảng giá</h6>
+								</div>
+								<form method="get" action="/Product" class="nv-price-filter">
+									@if (!string.IsNullOrWhiteSpace(q))
+									{
+										<input type="hidden" name="q" value="@q" />
+									}
+									@if (regionId.HasValue)
+									{
+										<input type="hidden" name="regionId" value="@regionId" />
+									}
+									@if (categoryId.HasValue)
+									{
+										<input type="hidden" name="categoryId" value="@categoryId" />
+									}
+									@if (!string.IsNullOrWhiteSpace(sort))
+									{
+										<input type="hidden" name="sort" value="@sort" />
+									}
+									<div class="row g-2 align-items-center">
+										<div class="col-6">
+											<label class="form-label small text-muted mb-1">Từ (đ)</label>
+											<input type="number"
+												   min="0"
+												   step="1000"
+												   name="minPrice"
+												   value="@(minPrice?.ToString("0") ?? "")"
+												   class="form-control form-control-sm" />
+										</div>
+										<div class="col-6">
+											<label class="form-label small text-muted mb-1">Đến (đ)</label>
+											<input type="number"
+												   min="0"
+												   step="1000"
+												   name="maxPrice"
+												   value="@(maxPrice?.ToString("0") ?? "")"
+												   class="form-control form-control-sm" />
+										</div>
+										<div class="col-12 mt-2 d-flex justify-content-between">
+											<button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">
+												Lọc giá
+											</button>
+											@if (minPrice.HasValue || maxPrice.HasValue)
+											{
+												<a href="/Product@(BuildQueryWithoutPrice())" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+													Xóa
+												</a>
+											}
+										</div>
+									</div>
+								</form>
+							</div>
+
+							<!-- Region filter -->
+							<div class="mb-4">
+								<div class="d-flex justify-content-between align-items-center mb-2">
+									<h6 class="mb-0">Vùng miền</h6>
+								</div>
+								<div class="region-filter d-flex flex-wrap gap-2 nv-region-filter-scroll">
+									<a href="/Product@(string.IsNullOrWhiteSpace(q) && string.IsNullOrWhiteSpace(sort) ? "" : $"?{string.Join("&", new[]{ !string.IsNullOrWhiteSpace(q) ? $"q={Uri.EscapeDataString(q)}" : null, !string.IsNullOrWhiteSpace(sort) ? $"sort={sort}" : null }.Where(x => x != null))}")"
+									   class="btn btn-sm nv-chip @(regionId == null ? "nv-chip-active" : "")">
+										Tất cả
+									</a>
+									@foreach (var r in regions)
+									{
+										var qs = new List<string> { $"regionId={r.RegionId}" };
+										if (categoryId.HasValue) qs.Add($"categoryId={categoryId}");
+										if (!string.IsNullOrWhiteSpace(q)) qs.Add($"q={Uri.EscapeDataString(q)}");
+										if (!string.IsNullOrWhiteSpace(sort)) qs.Add($"sort={sort}");
+										var href = "/Product?" + string.Join("&", qs);
+										<a href="@href"
+										   class="btn btn-sm nv-chip @(regionId == r.RegionId ? "nv-chip-active" : "")">
+											@r.RegionName
+										</a>
+									}
+								</div>
+							</div>
+
+							<!-- Category filter -->
+							<div class="mb-4">
+								<div class="d-flex justify-content-between align-items-center mb-2">
+									<h6 class="mb-0">Danh mục</h6>
+								</div>
+								<ul class="list-unstyled fruite-categorie mb-0">
+									<li class="mb-1">
+										<a href="/Product@(regionId.HasValue || !string.IsNullOrWhiteSpace(q) || !string.IsNullOrWhiteSpace(sort) ? "?" : "")@(regionId.HasValue ? $"regionId={regionId}&" : "")@(string.IsNullOrWhiteSpace(q) ? "" : $"q={Uri.EscapeDataString(q)}&")@(string.IsNullOrWhiteSpace(sort) ? "" : $"sort={sort}&")"
+										   class="d-flex align-items-center nv-filter-link @(categoryId == null ? "text-primary fw-semibold" : "")">
+											<i class="fas fa-layer-group me-2"></i> Tất cả
+										</a>
+									</li>
+									@foreach (var c in categories)
+									{
+										var qs = new List<string> { $"categoryId={c.CategoryId}" };
+										if (regionId.HasValue) qs.Add($"regionId={regionId}");
+										if (!string.IsNullOrWhiteSpace(q)) qs.Add($"q={Uri.EscapeDataString(q)}");
+										if (!string.IsNullOrWhiteSpace(sort)) qs.Add($"sort={sort}");
+										var href = "/Product?" + string.Join("&", qs);
+										<li class="mb-1">
+											<a href="@href"
+											   class="d-flex align-items-center nv-filter-link @(categoryId == c.CategoryId ? "text-primary fw-semibold" : "")">
+												<i class="fas fa-tag me-2"></i>@c.CategoryName
+											</a>
+										</li>
+									}
+								</ul>
+							</div>
+
+							<!-- Promo banner -->
+							<div class="nv-filter-banner position-relative rounded overflow-hidden">
+								<img src="~/img/banner-fruits.jpg" class="img-fluid w-100" alt="Quà biếu đặc sản">
+								<div class="nv-filter-banner-content text-end text-white">
+									<div class="small text-uppercase">Gợi ý</div>
+									<h5 class="mb-1">Quà biếu chuẩn vị</h5>
+									<div>Đặc sản vùng miền sang trọng</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Main content: toolbar + grid -->
+			<div class="col-lg-9 nv-market-products-col">
+				<div class="card border-0 shadow-sm mb-4 nv-product-toolbar">
+					<div class="card-body px-3 px-md-4 py-3">
+						<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 nv-product-toolbar__inner">
+							<div class="small text-muted nv-product-toolbar__summary">
+								@if (regionId.HasValue || categoryId.HasValue || minPrice.HasValue || maxPrice.HasValue || !string.IsNullOrWhiteSpace(q) || !string.IsNullOrWhiteSpace(sort))
+								{
+									<span class="me-2">Đang áp dụng:</span>
+									@if (!string.IsNullOrWhiteSpace(q))
+									{
+										<span class="badge bg-light text-dark me-1">Từ khóa: @q</span>
+									}
+									@if (regionId.HasValue)
+									{
+										var currentRegion = regions.FirstOrDefault(r => r.RegionId == regionId);
+										if (currentRegion != null)
+										{
+											<span class="badge bg-light text-dark me-1">Vùng: @currentRegion.RegionName</span>
+										}
+									}
+									@if (categoryId.HasValue)
+									{
+										var currentCat = categories.FirstOrDefault(c => c.CategoryId == categoryId);
+										if (currentCat != null)
+										{
+											<span class="badge bg-light text-dark me-1">Danh mục: @currentCat.CategoryName</span>
+										}
+									}
+									@if (minPrice.HasValue || maxPrice.HasValue)
+									{
+										var label = $"{(minPrice.HasValue ? minPrice.Value.ToString("N0") : "0")} - {(maxPrice.HasValue ? maxPrice.Value.ToString("N0") : "∞")} đ";
+										<span class="badge bg-light text-dark me-1">Giá: @label</span>
+									}
+									@if (!string.IsNullOrWhiteSpace(sort))
+									{
+										string sortLabel = sort switch
+										{
+											"newest" => "Mới về",
+											"price_asc" => "Giá tăng dần",
+											"price_desc" => "Giá giảm dần",
+											_ => "Mặc định"
+										};
+										<span class="badge bg-light text-dark me-1">Sắp xếp: @sortLabel</span>
+									}
+								}
+								else
+								{
+									<span>Hiển thị tất cả đặc sản.</span>
+								}
+							</div>
+
+							<form method="get" action="/Product" id="sortForm" class="d-flex align-items-center gap-2 nv-product-toolbar__sort">
+								@if (!string.IsNullOrWhiteSpace(q))
+								{
+									<input type="hidden" name="q" value="@q" />
+								}
+								@if (regionId.HasValue)
+								{
+									<input type="hidden" name="regionId" value="@regionId" />
+								}
+								@if (categoryId.HasValue)
+								{
+									<input type="hidden" name="categoryId" value="@categoryId" />
+								}
+								@if (currentPage > 1)
+								{
+									<input type="hidden" name="page" value="@currentPage" />
+								}
+								<label for="sortSelect" class="small text-muted mb-0 me-1">Sắp xếp:</label>
+								<select id="sortSelect"
+										name="sort"
+										class="form-select form-select-sm border-secondary-subtle"
+										onchange="document.getElementById('sortForm').submit()">
+									<option value="" selected="@(string.IsNullOrWhiteSpace(sort))">Mặc định</option>
+									<option value="newest" selected="@(sort == "newest")">Mới về</option>
+									<option value="price_asc" selected="@(sort == "price_asc")">Giá tăng dần</option>
+									<option value="price_desc" selected="@(sort == "price_desc")">Giá giảm dần</option>
+								</select>
+							</form>
+						</div>
+					</div>
+				</div>
+
+				<div class="row nv-product-grid justify-content-start">
+					@if (!Model.Any())
+					{
+						<div class="col-12">
+							<div class="bg-light rounded p-5 text-center text-muted">
+								Không tìm thấy sản phẩm phù hợp. Hãy thử đổi từ khóa hoặc bỏ bớt bộ lọc.
+							</div>
+						</div>
+					}
+					else
+					{
+						@foreach (var item in Model)
+						{
+							var image = item.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+							var regionName = item.Region?.RegionName ?? "Đặc sản";
+
+							<div class="nv-product-grid__item">
+								<div class="nv-product-card nv-product-card--grid card h-100 border-0 shadow-sm">
+									<div class="nv-product-card__img-wrap position-relative">
+										<img src="~/img/@image" class="nv-product-card__img" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+										<span class="nv-product-card__region">@regionName</span>
+									</div>
+									<div class="card-body d-flex flex-column p-3">
+										<h5 class="card-title nv-product-card__title mb-2">@item.ProductName</h5>
+										<p class="card-text text-muted small nv-product-card__desc mb-3">@item.Description</p>
+										<div class="mt-auto pt-2">
+											<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+												<span class="text-primary fw-bold">@String.Format("{0:N0}", item.Price ?? 0) đ</span>
+												<a href="/Cart/Add/@item.ProductId" class="btn btn-sm btn-primary rounded-pill px-3" title="Thêm vào giỏ">
+													<i class="fa fa-cart-plus me-1"></i> Thêm giỏ
+												</a>
+											</div>
+											<a href="/Product/Details/@item.ProductId" class="btn btn-sm btn-outline-secondary w-100 rounded-pill">
+												Xem chi tiết
+											</a>
+										</div>
+									</div>
+								</div>
+							</div>
+						}
+					}
+				</div>
+
+				@if (totalPages > 1)
+				{
+					<div class="col-12 mt-4">
+						<div class="pagination d-flex justify-content-center mt-5">
+							@{
+								string BuildPageUrl(int targetPage)
+								{
+									var qs = new List<string>();
+									if (!string.IsNullOrWhiteSpace(q)) qs.Add($"q={Uri.EscapeDataString(q)}");
+									if (regionId.HasValue) qs.Add($"regionId={regionId}");
+									if (categoryId.HasValue) qs.Add($"categoryId={categoryId}");
+									if (!string.IsNullOrWhiteSpace(sort)) qs.Add($"sort={sort}");
+									if (targetPage > 1) qs.Add($"page={targetPage}");
+									var queryString = qs.Count > 0 ? "?" + string.Join("&", qs) : string.Empty;
+									return "/Product" + queryString;
+								}
+
+								int startPage = Math.Max(1, currentPage - 2);
+								int endPage = Math.Min(totalPages, currentPage + 2);
+							}
+
+							@if (currentPage > 1)
+							{
+								<a href="@BuildPageUrl(currentPage - 1)" class="rounded">&laquo;</a>
+							}
+
+							@for (int p = startPage; p <= endPage; p++)
+							{
+								<a href="@BuildPageUrl(p)" class="rounded @(p == currentPage ? "active" : "")">@p</a>
+							}
+
+							@if (currentPage < totalPages)
+							{
+								<a href="@BuildPageUrl(currentPage + 1)" class="rounded">&raquo;</a>
+							}
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+</div>
+<!-- Product Marketplace End-->
+
+<!-- AI gợi ý đặc sản theo "tính cách" ăn uống -->
+<section class="py-5">
+	<div class="container">
+		<style>
+			.nv-ai-card {
+				border-radius: 18px;
+			}
+
+			.nv-ai-pill {
+				border-radius: 999px;
+				border: 1px solid rgba(148, 163, 184, .7);
+				background: #fff;
+				color: #0f172a;
+				font-weight: 600;
+				padding: .45rem .75rem;
+			}
+
+			.nv-ai-pill:hover {
+				border-color: rgba(13, 110, 253, .55);
+				background: rgba(13, 110, 253, .04);
+			}
+
+			.nv-ai-pill.nv-ai-pill--active {
+				border-color: rgba(25, 135, 84, .65);
+				background: rgba(25, 135, 84, .10);
+				color: #14532d;
+			}
+
+			.nv-ai-result-list {
+				padding-left: 1.1rem;
+			}
+
+			.nv-ai-result-list li {
+				margin-bottom: .35rem;
+			}
+
+			.nv-ai-choice-block {
+				padding: .85rem;
+				border: 1px solid rgba(20, 83, 45, .08);
+				border-radius: 14px;
+				background: rgba(248, 250, 252, .72);
+			}
+
+			.nv-ai-choice-block + .nv-ai-choice-block {
+				margin-top: .9rem;
+			}
+
+			.nv-ai-result-list li {
+				padding: .45rem .6rem;
+				border-radius: 12px;
+				background: #fff;
+				box-shadow: 0 8px 20px rgba(15, 23, 42, .06);
+			}
+
+			@@media (max-width: 575.98px) {
+				.nv-ai-pill {
+					font-size: .82rem;
+					padding: .38rem .62rem;
+				}
+			}
+		</style>
+
+		<div class="text-center mb-4">
+			<span class="text-secondary text-uppercase small fw-semibold" style="letter-spacing:.16em;">
+				🧑‍🍳 AI gợi ý đặc sản
+			</span>
+			<h2 class="h4 fw-bold text-dark mt-2 mb-2">
+				Chọn “gu ăn uống” – nhận gợi ý đặc sản Việt
+			</h2>
+			<p class="text-muted small mb-0">
+				Chọn vị, tâm trạng, dịp tặng quà và phong cách ăn uống để nhận gợi ý đặc sản “chuẩn gu”.
+			</p>
+		</div>
+
+		<div class="card border-0 shadow-sm nv-ai-card overflow-hidden">
+			<div class="row g-0">
+				<!-- Cột chọn gu -->
+				<div class="col-lg-6 border-end">
+					<div class="p-4 p-md-5">
+						<h5 class="mb-3 d-flex align-items-center gap-2">
+							<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+								1
+							</span>
+							<span>Chọn “gu” của bạn</span>
+						</h5>
+
+						<div class="mb-4">
+							<div class="small text-muted mb-2">Bạn thích vị gì?</div>
+							<div class="d-flex flex-wrap gap-2" id="tasteGroup">
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="tasteCay">
+									🌶 Cay
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="tasteNgot">
+									🍬 Ngọt
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="tasteMan">
+									🧂 Mặn
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="tasteChua">
+									🍋 Chua
+								</button>
+							</div>
+							<input type="checkbox" class="d-none" id="tasteCay" />
+							<input type="checkbox" class="d-none" id="tasteNgot" />
+							<input type="checkbox" class="d-none" id="tasteMan" />
+							<input type="checkbox" class="d-none" id="tasteChua" />
+						</div>
+
+						<div class="mb-4">
+							<div class="small text-muted mb-2">Bạn đang ở mood nào?</div>
+							<div class="d-flex flex-wrap gap-2">
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="moodThuGian">
+									😌 Thư giãn nhẹ nhàng
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="moodNhauBanBe">
+									🍻 Tụ tập bạn bè
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="moodGiaDinh">
+									👨‍👩‍👧‍👦 Quây quần gia đình
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="moodLamViec">
+									💻 Vừa ăn vặt vừa làm
+								</button>
+							</div>
+							<input type="checkbox" class="d-none" id="moodThuGian" />
+							<input type="checkbox" class="d-none" id="moodNhauBanBe" />
+							<input type="checkbox" class="d-none" id="moodGiaDinh" />
+							<input type="checkbox" class="d-none" id="moodLamViec" />
+						</div>
+
+						<div class="mb-4">
+							<div class="small text-muted mb-2">Bạn dùng cho dịp gì?</div>
+							<div class="d-flex flex-wrap gap-2">
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="useAnVat">
+									🥨 Ăn vặt mỗi ngày
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="useNhau">
+									🍺 Đãi bạn / nhậu
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="useQuaBieu">
+									🎁 Làm quà biếu
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="useMangDiXa">
+									✈️ Mang đi xa / xách tay
+								</button>
+							</div>
+							<input type="checkbox" class="d-none" id="useAnVat" />
+							<input type="checkbox" class="d-none" id="useNhau" />
+							<input type="checkbox" class="d-none" id="useQuaBieu" />
+							<input type="checkbox" class="d-none" id="useMangDiXa" />
+						</div>
+
+						<div class="mb-4">
+							<div class="small text-muted mb-2">Ngân sách mong muốn (ước lượng)</div>
+							<div class="d-flex flex-wrap gap-2">
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="budgetTietKiem">
+									💸 Tiết kiệm
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="budgetVuaTui">
+									💰 Vừa túi tiền
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="budgetCaoCap">
+									👑 Cao cấp / sang trọng
+								</button>
+							</div>
+							<input type="checkbox" class="d-none" id="budgetTietKiem" />
+							<input type="checkbox" class="d-none" id="budgetVuaTui" />
+							<input type="checkbox" class="d-none" id="budgetCaoCap" />
+						</div>
+
+						<div class="mb-4 nv-ai-choice-block">
+							<div class="small text-muted mb-2">K&#7871;t c&#7845;u b&#7841;n mu&#7889;n th&#7917;?</div>
+							<div class="d-flex flex-wrap gap-2">
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="textureGion">
+									Gi&#242;n vui mi&#7879;ng
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="textureDeo">
+									D&#7867;o, m&#7873;m
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="textureKho">
+									Kh&#244;, &#273;&#7853;m v&#7883;
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="textureNuocCham">
+									Ch&#7845;m / pha k&#232;m
+								</button>
+							</div>
+							<input type="checkbox" class="d-none" id="textureGion" />
+							<input type="checkbox" class="d-none" id="textureDeo" />
+							<input type="checkbox" class="d-none" id="textureKho" />
+							<input type="checkbox" class="d-none" id="textureNuocCham" />
+						</div>
+
+						<div class="mb-4 nv-ai-choice-block">
+							<div class="small text-muted mb-2">&#431;u ti&#234;n v&#249;ng mi&#7873;n?</div>
+							<div class="d-flex flex-wrap gap-2">
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="regionBac">
+									Mi&#7873;n B&#7855;c
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="regionTrung">
+									Mi&#7873;n Trung
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="regionNam">
+									Mi&#7873;n Nam
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="regionTayNguyen">
+									T&#226;y Nguy&#234;n
+								</button>
+							</div>
+							<input type="checkbox" class="d-none" id="regionBac" />
+							<input type="checkbox" class="d-none" id="regionTrung" />
+							<input type="checkbox" class="d-none" id="regionNam" />
+							<input type="checkbox" class="d-none" id="regionTayNguyen" />
+						</div>
+
+						<div class="mb-4 nv-ai-choice-block">
+							<div class="small text-muted mb-2">Nhu c&#7847;u ri&#234;ng?</div>
+							<div class="d-flex flex-wrap gap-2">
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="needHealthy">
+									Thanh nh&#7865; / healthy
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="needLaMieng">
+									L&#7841; mi&#7879;ng
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="needDeBaoQuan">
+									D&#7877; b&#7843;o qu&#7843;n
+								</button>
+								<button type="button" class="btn btn-sm nv-ai-pill" data-toggle-check="needPhaChe">
+									Pha ch&#7871; / th&#432;&#7903;ng th&#7913;c
+								</button>
+							</div>
+							<input type="checkbox" class="d-none" id="needHealthy" />
+							<input type="checkbox" class="d-none" id="needLaMieng" />
+							<input type="checkbox" class="d-none" id="needDeBaoQuan" />
+							<input type="checkbox" class="d-none" id="needPhaChe" />
+						</div>
+
+						<button type="button"
+								class="btn btn-success rounded-pill px-4"
+								id="btnSuggestSpecialty">
+							<i class="fa fa-magic me-1"></i> Gợi ý đặc sản
+						</button>
+						<button type="button"
+								class="btn btn-outline-secondary rounded-pill px-4 ms-2"
+								id="btnResetSpecialty">
+							Reset
+						</button>
+						<div class="small text-muted mt-2">
+							Bạn có thể chọn nhiều ô cùng lúc, AI sẽ cố gợi ý combo “hợp gu” nhất.
+						</div>
+					</div>
+				</div>
+
+				<!-- Cột kết quả -->
+				<div class="col-lg-6">
+					<div class="p-4 p-md-5 bg-light h-100">
+						<h5 class="mb-3 d-flex align-items-center gap-2">
+							<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+								2
+							</span>
+							<span>AI gợi ý cho bạn</span>
+						</h5>
+						<p class="text-muted small mb-3" id="aiHint">
+							Chọn vài tuỳ chọn bên trái, sau đó bấm “Gợi ý đặc sản”.
+						</p>
+						<ul class="mb-3 nv-ai-result-list" id="aiSuggestionList"></ul>
+						<div class="small text-muted" id="aiExtraNote"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+@section Scripts {
+	<script>
+		(function () {
+			const root = document.querySelector('.nv-ai-card');
+
+			// Toggle pill -> hidden checkbox
+			document.querySelectorAll('[data-toggle-check]').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					try { btn.blur(); } catch (_) { }
+					const targetId = btn.getAttribute('data-toggle-check');
+					const input = document.getElementById(targetId);
+					if (!input) return;
+					const newVal = !input.checked;
+					input.checked = newVal;
+					btn.classList.toggle('nv-ai-pill--active', newVal);
+					btn.setAttribute('aria-pressed', newVal ? 'true' : 'false');
+				});
+			});
+
+			const btn = document.getElementById('btnSuggestSpecialty');
+			if (!btn) return;
+			const resetBtn = document.getElementById('btnResetSpecialty');
+
+			function isChecked(id) {
+				const el = document.getElementById(id);
+				return !!(el && el.checked);
+			}
+
+			function buildSuggestions() {
+				const tastes = {
+					cay: isChecked('tasteCay'),
+					ngot: isChecked('tasteNgot'),
+					man: isChecked('tasteMan'),
+					chua: isChecked('tasteChua')
+				};
+				const mood = {
+					thuGian: isChecked('moodThuGian'),
+					nhauBanBe: isChecked('moodNhauBanBe'),
+					giaDinh: isChecked('moodGiaDinh'),
+					lamViec: isChecked('moodLamViec')
+				};
+				const use = {
+					anVat: isChecked('useAnVat'),
+					nhau: isChecked('useNhau'),
+					quaBieu: isChecked('useQuaBieu'),
+					mangDiXa: isChecked('useMangDiXa')
+				};
+				const budget = {
+					tietKiem: isChecked('budgetTietKiem'),
+					vuaTui: isChecked('budgetVuaTui'),
+					caoCap: isChecked('budgetCaoCap')
+				};
+				const texture = {
+					gion: isChecked('textureGion'),
+					deo: isChecked('textureDeo'),
+					kho: isChecked('textureKho'),
+					nuocCham: isChecked('textureNuocCham')
+				};
+				const region = {
+					bac: isChecked('regionBac'),
+					trung: isChecked('regionTrung'),
+					nam: isChecked('regionNam'),
+					tayNguyen: isChecked('regionTayNguyen')
+				};
+				const need = {
+					healthy: isChecked('needHealthy'),
+					laMieng: isChecked('needLaMieng'),
+					deBaoQuan: isChecked('needDeBaoQuan'),
+					phaChe: isChecked('needPhaChe')
+				};
+
+				const result = [];
+				const notes = [];
+				const add = function (items, note) {
+					items.forEach(function (item) { result.push(item); });
+					if (note) notes.push(note);
+				};
+
+				if (tastes.ngot && use.anVat) {
+					add(['Bánh đậu xanh Hải Dương', 'Kẹo dừa Bến Tre', 'Chuối sấy giòn Nam Bộ'], 'Gu ngọt nhẹ, hợp ăn vặt khi xem phim hoặc làm việc.');
+				}
+				if (tastes.ngot && use.quaBieu) {
+					add(['Bánh pía Sóc Trăng (set quà biếu)', 'Kẹo mè xửng Huế', 'Mứt trái cây Đà Lạt'], 'Đặc sản ngọt phù hợp làm quà biếu người lớn tuổi, gia đình.');
+				}
+				if ((tastes.cay || tastes.man) && use.nhau) {
+					add(['Khô mực Cà Mau', 'Khô cá lóc miền Tây', 'Mực một nắng Phan Thiết', 'Khô bò lá chanh Tây Nguyên'], 'Đồ nhắm đậm vị, hợp tụ tập bạn bè, lai rai cuối tuần.');
+				}
+				if (tastes.chua && tastes.man) {
+					add(['Cóc, xoài sấy dẻo chua ngọt', 'Mắm thái, mắm ruốc Huế'], 'Gu chua mặn bắt vị, hợp người thích vị mạnh, ăn kèm cơm hoặc nhậu.');
+				}
+				if (mood.giaDinh) {
+					add(['Lạp xưởng tươi miền Tây', 'Giò chả đặc sản làng nghề', 'Set quà đặc sản 3 miền mix nhiều món'], 'Dễ chia sẻ cho nhiều người, hợp bữa cơm gia đình hoặc tụ họp.');
+				}
+				if (use.mangDiXa) {
+					add(['Cà phê rang xay Buôn Ma Thuột (gói / hộp quà)', 'Trà sen Tây Hồ, trà Ô Long Đà Lạt', 'Hạt điều Bình Phước rang bơ'], 'Các món khô, đóng gói gọn, dễ mang đi xa hoặc gửi tặng người ở nước ngoài.');
+				}
+				if (budget.tietKiem) {
+					add(['Bánh tráng trộn / bánh tráng me Tây Ninh', 'Các loại khô gói nhỏ ăn vặt'], 'Gu tiết kiệm: ưu tiên gói nhỏ, dễ thử nhiều vị.');
+				}
+				if (budget.caoCap || (budget.vuaTui && use.quaBieu)) {
+					add(['Set quà đặc sản cao cấp (hộp gỗ / hộp giấy cứng)', 'Nước mắm Phú Quốc loại thượng hạng', 'Yến sào / mật ong rừng'], 'Gu quà biếu cao cấp: chú trọng bao bì đẹp, thương hiệu uy tín.');
+				}
+
+				if (texture.gion) {
+					add(['Cơm cháy chà bông Ninh Bình', 'Bánh tráng phơi sương Tây Ninh', 'Kẹo lạc giòn miền Bắc'], 'Kết cấu giòn hợp ăn vặt nhanh, dễ chia phần và không bị ngán.');
+				}
+				if (texture.deo) {
+					add(['Ô mai mơ xí muội Hà Nội', 'Mè xửng dẻo Huế', 'Xoài sấy dẻo Đà Lạt'], 'Nhóm dẻo mềm hợp người thích vị chậm, nhâm nhi với trà.');
+				}
+				if (texture.kho || need.deBaoQuan) {
+					add(['Khô bò một nắng Gia Lai', 'Tôm khô Cà Mau', 'Mực rim me Đà Nẵng'], 'Ưu tiên đồ khô, hũ kín hoặc túi zip để bảo quản và vận chuyển tốt hơn.');
+				}
+				if (texture.nuocCham) {
+					add(['Muối tôm Tây Ninh', 'Mắm nêm Đà Nẵng', 'Nước mắm nhĩ Phú Quốc'], 'Nhóm chấm/pha kèm giúp món đơn giản đậm vị hơn.');
+				}
+
+				if (region.bac) {
+					add(['Cốm làng Vòng', 'Trà sen Tây Hồ', 'Bánh cáy Thái Bình'], 'Miền Bắc hợp gu thanh, thơm nhẹ, lịch sự khi làm quà.');
+				}
+				if (region.trung) {
+					add(['Mè xửng Huế', 'Tôm chua Huế', 'Tré Bình Định'], 'Miền Trung nổi bật vị đậm, cay nhẹ và nhiều món ăn kèm.');
+				}
+				if (region.nam) {
+					add(['Bánh pía Sóc Trăng', 'Kẹo dừa Bến Tre', 'Khô cá lóc miền Tây'], 'Miền Nam hợp gu ngọt béo, mộc mạc, dễ ăn trong gia đình.');
+				}
+				if (region.tayNguyen) {
+					add(['Cà phê Buôn Ma Thuột', 'Hạt mắc ca Đắk Lắk', 'Bò một nắng Gia Lai'], 'Tây Nguyên hợp người thích hương thơm mạnh, đồ khô và quà hộp chắc tay.');
+				}
+
+				if (need.healthy) {
+					add(['Hạt điều rang mộc Bình Phước', 'Mật ong rừng Tây Nguyên', 'Trà thảo mộc Đà Lạt'], 'Nhóm thanh nhẹ phù hợp dùng hằng ngày, ít nặng mùi và dễ tặng.');
+				}
+				if (need.laMieng) {
+					add(['Combo thử vị 3 miền', 'Mắm ruốc Huế ăn kèm trái cây', 'Muối kiến vàng Gia Lai'], 'Nếu muốn lạ miệng, nên chọn combo nhỏ để thử nhiều vị trước.');
+				}
+				if (need.phaChe || mood.thuGian) {
+					add(['Cà phê phin Buôn Ma Thuột', 'Trà Ô Long Đà Lạt', 'Cacao nguyên chất Bến Tre'], 'Nhóm pha chế hợp buổi sáng, làm việc hoặc làm quà cho người thích đồ uống.');
+				}
+				if (mood.lamViec) {
+					add(['Hạt dinh dưỡng mix vị', 'Chuối sấy giòn', 'Bánh đậu xanh hộp nhỏ'], 'Nên chọn món ít vụn, ít mùi để ăn khi làm việc.');
+				}
+
+				if (result.length === 0) {
+					add(['Nem chua Thanh Hóa', 'Bánh pía Sóc Trăng', 'Trà sen Tây Hồ', 'Cà phê Buôn Ma Thuột', 'Khô bò một nắng Gia Lai'], 'Bạn chưa chọn nhiều tuỳ chọn, AI gợi ý vài món quốc dân dễ hợp gu.');
+				}
+
+				return {
+					items: Array.from(new Set(result)).slice(0, 12),
+					notes: Array.from(new Set(notes)).slice(0, 5)
+				};
+			}
+			btn.addEventListener('click', function () {
+				const listEl = document.getElementById('aiSuggestionList');
+				const hintEl = document.getElementById('aiHint');
+				const noteEl = document.getElementById('aiExtraNote');
+				if (!listEl) return;
+
+				const { items, notes } = buildSuggestions();
+
+				listEl.innerHTML = '';
+				items.forEach(item => {
+					const li = document.createElement('li');
+					li.textContent = item;
+					listEl.appendChild(li);
+				});
+
+				if (hintEl) {
+					hintEl.textContent = 'Bạn nên thử:';
+				}
+				if (noteEl) {
+					noteEl.textContent = notes.join(' ');
+				}
+			});
+
+			function resetAll() {
+				// clear all hidden checkboxes
+				(root || document).querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+					cb.checked = false;
+				});
+
+				// clear pill active state
+				(root || document).querySelectorAll('[data-toggle-check]').forEach(function (pill) {
+					pill.classList.remove('nv-ai-pill--active');
+					pill.setAttribute('aria-pressed', 'false');
+				});
+
+				const listEl = document.getElementById('aiSuggestionList');
+				const hintEl = document.getElementById('aiHint');
+				const noteEl = document.getElementById('aiExtraNote');
+				if (listEl) listEl.innerHTML = '';
+				if (hintEl) hintEl.textContent = 'Chọn vài tuỳ chọn bên trái, sau đó bấm “Gợi ý đặc sản”.';
+				if (noteEl) noteEl.textContent = '';
+			}
+
+			if (resetBtn) resetBtn.addEventListener('click', resetAll);
+		})();
+	</script>
+}

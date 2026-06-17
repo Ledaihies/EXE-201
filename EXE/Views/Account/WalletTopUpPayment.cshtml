@@ -1,0 +1,70 @@
+@model EXE.ViewModels.WalletTopUpPaymentViewModel
+@{
+    ViewData["Title"] = "QR nạp ví";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4 p-md-5">
+                    @if (Model.IsPaid)
+                    {
+                        <div class="alert alert-success">Khoản nạp #@Model.Request.RequestId đã được xác nhận và cộng vào ví.</div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">Vui lòng chuyển khoản đúng số tiền và nội dung. Hệ thống sẽ tự cộng tiền vào ví khi giao dịch được xác nhận.</div>
+                    }
+
+                    <div class="row g-4 align-items-center">
+                        <div class="col-md-6 text-center">
+                            <img src="@Model.QrUrl" class="img-fluid rounded-3 border" alt="QR nạp ví #@Model.Request.RequestId" style="max-width:360px;">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="text-muted small">Số tiền nạp</div>
+                                <div class="h4 text-primary mb-0">@String.Format("{0:N0}", Model.Request.Amount) đ</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-muted small">Nội dung chuyển khoản</div>
+                                <div class="fs-5 fw-bold">@Model.Request.TransferContent</div>
+                            </div>
+                            <div class="small text-muted mb-4">Tiền sẽ vào tài khoản admin trước. Khi giao dịch được xác nhận, hệ thống cộng tiền vào ví người dùng và ghi nhận khoản này vào doanh thu admin.</div>
+                            <a href="/Account/WalletTopUpPayment/@Model.Request.RequestId" class="btn btn-primary rounded-pill px-4">Kiểm tra lại</a>
+                            <a href="/Account/Wallet" class="btn btn-outline-secondary rounded-pill px-4 ms-2">Về ví</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.IsPaid)
+{
+    <script>
+        (() => {
+            const statusUrl = '@Url.Action("WalletTopUpStatus", "Account", new { id = Model.Request.RequestId })';
+            let checking = false;
+
+            const checkPayment = async () => {
+                if (checking) return;
+                checking = true;
+                try {
+                    const response = await fetch(statusUrl, { cache: 'no-store' });
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    if (data.isPaid) {
+                        window.location.reload();
+                    }
+                } finally {
+                    checking = false;
+                }
+            };
+
+            checkPayment();
+            setInterval(checkPayment, 2000);
+        })();
+    </script>
+}

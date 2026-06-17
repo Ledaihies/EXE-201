@@ -1,0 +1,11 @@
+.vs/
+bin/
+obj/
+**/bin/
+**/obj/
+*.log
+*.err
+*.out
+bin_build_*/
+*.user
+*.suo

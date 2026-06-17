@@ -1,0 +1,123 @@
+@model IEnumerable<EXE.Models.Product>
+@{
+	Layout = "~/Views/Shared/_AdminLayout.cshtml";
+	ViewData["Title"] = "Quản lý sản phẩm";
+	string StatusLabel(string? status) => status switch
+	{
+		"Approved" => "Đã duyệt",
+		"Rejected" => "Từ chối",
+		"Deleted" => "Đã xóa",
+		_ => "Chờ duyệt"
+	};
+	string StatusClass(string? status) => status switch
+	{
+		"Approved" => "bg-success",
+		"Rejected" => "bg-danger",
+		"Deleted" => "bg-secondary",
+		_ => "bg-warning text-dark"
+	};
+}
+
+<div class="container-fluid py-3">
+	<style>
+		.nv-admin-card { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; background: #fff; box-shadow: 0 .125rem .35rem rgba(15,23,42,.06); }
+		.nv-admin-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(148,163,184,.35); }
+	</style>
+
+	<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+		<div>
+			<h2 class="mb-1">Quản lý sản phẩm</h2>
+			<p class="text-muted mb-0">Duyệt sản phẩm người bán, kiểm tra chứng minh nguồn gốc và quản lý danh mục hàng hóa.</p>
+		</div>
+		<a href="/ProductAdmin/Create" class="btn btn-primary rounded-pill px-4">
+			<i class="fas fa-plus me-2"></i>Thêm sản phẩm
+		</a>
+	</div>
+
+	@if (!string.IsNullOrWhiteSpace(TempData["ProductAdminMessage"] as string))
+	{
+		<div class="alert alert-success">@(TempData["ProductAdminMessage"] as string)</div>
+	}
+	@if (!string.IsNullOrWhiteSpace(TempData["ProductAdminError"] as string))
+	{
+		<div class="alert alert-danger">@(TempData["ProductAdminError"] as string)</div>
+	}
+
+	<div class="nv-admin-card overflow-hidden">
+		<div class="table-responsive">
+			<table class="table mb-0 align-middle">
+				<thead class="table-light">
+					<tr>
+						<th style="width:90px;">ID</th>
+						<th>Sản phẩm</th>
+						<th style="width:160px;">Người bán</th>
+						<th style="width:140px;">Duyệt</th>
+						<th class="text-end" style="width:140px;">Giá</th>
+						<th class="text-center" style="width:100px;">Tồn</th>
+						<th style="width:280px;" class="text-end">Thao tác</th>
+					</tr>
+				</thead>
+				<tbody>
+					@if (!Model.Any())
+					{
+						<tr>
+							<td colspan="7" class="text-center py-5 text-muted">Chưa có sản phẩm.</td>
+						</tr>
+					}
+					else
+					{
+						@foreach (var item in Model)
+						{
+							var image = item.ProductImages?.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+							var status = item.ApprovalStatus ?? "Approved";
+							<tr>
+								<td class="fw-bold">#@item.ProductId</td>
+								<td>
+									<div class="d-flex align-items-center gap-3">
+										<img src="~/img/@image" class="nv-admin-thumb" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+										<div>
+											<div class="fw-semibold">@item.ProductName</div>
+											<div class="text-muted small text-truncate" style="max-width:420px;">@item.Description</div>
+										</div>
+									</div>
+								</td>
+								<td>
+									<div>@(item.Seller?.FullName ?? "Admin")</div>
+									@if (!string.IsNullOrWhiteSpace(item.OriginProofImageUrl))
+									{
+										<a href="/img/@item.OriginProofImageUrl" target="_blank" class="small">Xem nguồn gốc</a>
+									}
+									else if (item.SellerId.HasValue)
+									{
+										<div class="small text-danger">Chưa có chứng từ</div>
+									}
+								</td>
+								<td><span class="badge @StatusClass(status)">@StatusLabel(status)</span></td>
+								<td class="text-end fw-semibold">@String.Format("{0:N0}", item.Price ?? 0) đ</td>
+								<td class="text-center">@((item.Stock ?? 0))</td>
+								<td class="text-end">
+									@if (status != "Approved")
+									{
+										<form method="post" action="/ProductAdmin/Approve/@item.ProductId" class="d-inline" data-confirm="Bạn có chắc chắn muốn duyệt sản phẩm này?">
+											<button type="submit" class="btn btn-sm btn-success rounded-pill px-3">Duyệt</button>
+										</form>
+									}
+									@if (status != "Rejected")
+									{
+										<form method="post" action="/ProductAdmin/Reject/@item.ProductId" class="d-inline" data-confirm="Bạn có chắc chắn muốn từ chối sản phẩm này?">
+											<button type="submit" class="btn btn-sm btn-warning rounded-pill px-3">Từ chối</button>
+										</form>
+									}
+									<a href="/ProductAdmin/Edit/@item.ProductId" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Sửa</a>
+									<form method="post" action="/ProductAdmin/Delete/@item.ProductId" class="d-inline" data-confirm="Bạn có chắc chắn muốn xóa sản phẩm này?">
+										<button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Xóa</button>
+									</form>
+								</td>
+							</tr>
+						}
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>

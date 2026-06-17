@@ -1,0 +1,110 @@
+@model EXE.Models.User
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var returnTo = ViewBag.ReturnTo as string ?? "/AccountAdmin/Buyers";
+    var isSeller = string.Equals(Model.Role?.RoleName, "Seller", StringComparison.OrdinalIgnoreCase);
+    int productCount = ViewBag.ProductCount ?? 0;
+    int orderCount = ViewBag.OrderCount ?? 0;
+    int reviewCount = ViewBag.ReviewCount ?? 0;
+    decimal orderTotal = ViewBag.OrderTotal ?? 0m;
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="mb-1">Chi tiết tài khoản</h2>
+            <p class="text-muted mb-0">Xem thông tin tài khoản @(isSeller ? "người bán" : "người mua").</p>
+        </div>
+        <a href="@returnTo" class="btn btn-outline-secondary rounded-pill px-4">Quay lại</a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius:8px;">
+                <div class="card-body">
+                    <div class="text-muted small">@(isSeller ? "Sản phẩm" : "Đánh giá")</div>
+                    <div class="h4 mb-0">@(isSeller ? productCount : reviewCount)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius:8px;">
+                <div class="card-body">
+                    <div class="text-muted small">Đơn hàng</div>
+                    <div class="h4 mb-0">@orderCount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius:8px;">
+                <div class="card-body">
+                    <div class="text-muted small">Giá trị</div>
+                    <div class="h4 mb-0">@String.Format("{0:N0}", orderTotal) đ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius:8px;">
+                <div class="card-body">
+                    <div class="text-muted small">Ngày tạo</div>
+                    <div class="h5 mb-0">@Model.CreatedDate?.ToString("dd/MM/yyyy")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:8px;">
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="text-muted small">Tên hiển thị</div>
+                    <div class="fw-semibold">@Model.FullName</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Email</div>
+                    <div class="fw-semibold">@Model.Email</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Số điện thoại</div>
+                    <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.Phone) ? "Chưa có" : Model.Phone)</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Vai trò</div>
+                    <div class="fw-semibold">@Model.Role?.RoleName</div>
+                </div>
+                <div class="col-12">
+                    <div class="text-muted small">Địa chỉ</div>
+                    <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.Address) ? "Chưa có" : Model.Address)</div>
+                </div>
+
+                @if (isSeller)
+                {
+                    <div class="col-12"><hr /></div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Ngân hàng</div>
+                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.BankName) ? "Chưa cấu hình" : Model.BankName)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Số tài khoản</div>
+                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.BankAccountNumber) ? "Chưa cấu hình" : Model.BankAccountNumber)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Chủ tài khoản</div>
+                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.BankAccountName) ? "Chưa cấu hình" : Model.BankAccountName)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Chi nhánh</div>
+                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.BankBranch) ? "Chưa cấu hình" : Model.BankBranch)</div>
+                    </div>
+                }
+            </div>
+
+            <div class="text-end mt-4">
+                <form method="post" action="/AccountAdmin/Delete/@Model.UserId" class="d-inline" data-confirm="Bạn có chắc chắn muốn xóa tài khoản này?">
+                    <input type="hidden" name="returnTo" value="@returnTo" />
+                    <button type="submit" class="btn btn-outline-danger rounded-pill px-4">Xóa tài khoản</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

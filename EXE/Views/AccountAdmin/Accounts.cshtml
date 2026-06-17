@@ -1,0 +1,140 @@
+@model IReadOnlyList<EXE.Controllers.Admin.AccountAdminController.AdminAccountRow>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var accountType = ViewBag.AccountType as string ?? "User";
+    var isSeller = string.Equals(accountType, "Seller", StringComparison.OrdinalIgnoreCase);
+    var heading = ViewBag.Heading as string ?? "Quản lý tài khoản";
+    var description = ViewBag.Description as string ?? "";
+    var returnTo = isSeller ? "/AccountAdmin/Sellers" : "/AccountAdmin/Buyers";
+    var message = TempData["AccountAdminMessage"] as string;
+    var error = TempData["AccountAdminError"] as string;
+}
+
+<div class="container-fluid py-3">
+    <style>
+        .nv-admin-card { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; background: #fff; box-shadow: 0 .125rem .35rem rgba(15,23,42,.06); }
+        .nv-stat { min-width: 110px; }
+    </style>
+
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="mb-1">@heading</h2>
+            <p class="text-muted mb-0">@description</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/AccountAdmin/Sellers" class="btn @(isSeller ? "btn-success" : "btn-outline-success") rounded-pill px-4">Người bán</a>
+            <a href="/AccountAdmin/Buyers" class="btn @(!isSeller ? "btn-success" : "btn-outline-success") rounded-pill px-4">Người mua</a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-success">@message</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="nv-admin-card p-3">
+                <div class="text-muted small">Tổng tài khoản</div>
+                <div class="h4 mb-0">@Model.Count</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="nv-admin-card p-3">
+                <div class="text-muted small">@(isSeller ? "Tổng sản phẩm" : "Tổng đơn hàng")</div>
+                <div class="h4 mb-0">@(isSeller ? Model.Sum(x => x.ProductCount) : Model.Sum(x => x.OrderCount))</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="nv-admin-card p-3">
+                <div class="text-muted small">@(isSeller ? "Đơn liên quan" : "Tổng đánh giá")</div>
+                <div class="h4 mb-0">@(isSeller ? Model.Sum(x => x.OrderCount) : Model.Sum(x => x.ReviewCount))</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="nv-admin-card p-3">
+                <div class="text-muted small">Giá trị mua hàng</div>
+                <div class="h4 mb-0">@String.Format("{0:N0}", Model.Sum(x => x.OrderTotal)) đ</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nv-admin-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:80px;">ID</th>
+                        <th>Tài khoản</th>
+                        <th>Liên hệ</th>
+                        @if (isSeller)
+                        {
+                            <th>Ngân hàng</th>
+                            <th class="text-center" style="width:120px;">Sản phẩm</th>
+                        }
+                        else
+                        {
+                            <th>Địa chỉ</th>
+                            <th class="text-center" style="width:120px;">Đánh giá</th>
+                        }
+                        <th class="text-center" style="width:120px;">Đơn hàng</th>
+                        <th style="width:140px;">Ngày tạo</th>
+                        <th class="text-end" style="width:180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">Chưa có tài khoản.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model)
+                        {
+                            var user = row.User;
+                            <tr>
+                                <td class="fw-bold">#@user.UserId</td>
+                                <td>
+                                    <div class="fw-semibold">@user.FullName</div>
+                                    <div class="text-muted small">@user.Email</div>
+                                </td>
+                                <td>
+                                    <div>@(string.IsNullOrWhiteSpace(user.Phone) ? "Chưa có SĐT" : user.Phone)</div>
+                                    <div class="text-muted small text-truncate" style="max-width:260px;">@user.Address</div>
+                                </td>
+                                @if (isSeller)
+                                {
+                                    <td>
+                                        <div>@(string.IsNullOrWhiteSpace(user.BankName) ? "Chưa cấu hình" : user.BankName)</div>
+                                        <div class="text-muted small">@user.BankAccountNumber</div>
+                                    </td>
+                                    <td class="text-center fw-semibold">@row.ProductCount</td>
+                                }
+                                else
+                                {
+                                    <td class="text-truncate" style="max-width:300px;">@user.Address</td>
+                                    <td class="text-center fw-semibold">@row.ReviewCount</td>
+                                }
+                                <td class="text-center fw-semibold">@row.OrderCount</td>
+                                <td>@user.CreatedDate?.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">
+                                    <a href="/AccountAdmin/Details/@user.UserId?returnTo=@returnTo" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Chi tiết</a>
+                                    <form method="post" action="/AccountAdmin/Delete/@user.UserId" class="d-inline" data-confirm="Bạn có chắc chắn muốn xóa tài khoản này?">
+                                        <input type="hidden" name="returnTo" value="@returnTo" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Xóa</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

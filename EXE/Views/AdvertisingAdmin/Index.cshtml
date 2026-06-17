@@ -1,0 +1,199 @@
+@model IEnumerable<EXE.Models.AdvertisingPaymentRequest>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý quảng cáo";
+    var packages = ViewBag.Packages as List<EXE.Models.AdvertisingPackage> ?? new();
+    var message = TempData["AdvertisingAdminMessage"] as string;
+    var error = TempData["AdvertisingAdminError"] as string;
+    string StatusLabel(string? status) => status switch
+    {
+        "Paid" => "Đã thanh toán",
+        "Rejected" => "Chưa nhận tiền",
+        "Cancelled" => "Đã hủy",
+        _ => "Chờ chuyển khoản"
+    };
+    string StatusClass(string? status) => status switch
+    {
+        "Paid" => "bg-success",
+        "Rejected" => "bg-danger",
+        "Cancelled" => "bg-secondary",
+        _ => "bg-warning text-dark"
+    };
+}
+
+<div class="container-fluid">
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-success border-0 shadow-sm">@message</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-warning border-0 shadow-sm">@error</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">Thêm gói quảng cáo</h5>
+                    <form method="post" action="/AdvertisingAdmin/SavePackage">
+                        <input type="hidden" name="PackageId" value="0">
+                        <input type="hidden" name="IsActive" value="true">
+                        <div class="mb-2">
+                            <label class="form-label">Mã gói</label>
+                            <input name="Code" class="form-control" placeholder="banner_1d">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Tên gói</label>
+                            <input name="Name" class="form-control" required>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Giá</label>
+                                <input name="Price" type="number" min="0" step="1000" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Số ngày</label>
+                                <input name="Days" type="number" min="1" step="1" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mt-2 mb-3">
+                            <label class="form-label">Mô tả</label>
+                            <textarea name="Description" class="form-control" rows="2"></textarea>
+                        </div>
+                        <button class="btn btn-success rounded-pill px-4" type="submit">Thêm gói</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">Các gói quảng cáo</h5>
+                    <div class="vstack gap-3">
+                        @foreach (var package in packages)
+                        {
+                            <div class="border rounded p-3 bg-light">
+                                <form method="post" action="/AdvertisingAdmin/SavePackage" class="row g-2 align-items-end">
+                                    <input type="hidden" name="PackageId" value="@package.PackageId">
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Mã</label>
+                                        <input name="Code" value="@package.Code" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Tên</label>
+                                        <input name="Name" value="@package.Name" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Mô tả</label>
+                                        <input name="Description" value="@package.Description" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Giá</label>
+                                        <input name="Price" type="number" min="0" step="1000" value="@package.Price" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small">Ngày</label>
+                                        <input name="Days" type="number" min="1" step="1" value="@package.Days" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Trạng thái</label>
+                                        <select name="IsActive" class="form-select form-select-sm">
+                                            <option value="true" selected="@package.IsActive">Đang bán</option>
+                                            <option value="false" selected="@(!package.IsActive)">Ngừng bán</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 d-flex justify-content-end gap-2">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="submit">Lưu</button>
+                                    </div>
+                                </form>
+                                <form method="post" action="/AdvertisingAdmin/DeletePackage/@package.PackageId" class="text-end mt-2" data-confirm="Bạn có chắc chắn muốn xóa gói quảng cáo này?">
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit">Xóa</button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Yêu cầu thanh toán quảng cáo</h5>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@Model.Count() yêu cầu</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Người bán</th>
+                                    <th>Gói</th>
+                                    <th class="text-end">Số tiền</th>
+                                    <th>Nội dung CK</th>
+                                    <th>Thanh toán</th>
+                                    <th>Xác nhận lúc</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Any())
+                                {
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">Chưa có yêu cầu quảng cáo.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">@item.Product?.ProductName</div>
+                                                <div class="small text-muted">#@item.ProductId</div>
+                                            </td>
+                                            <td>@(item.Seller?.FullName ?? item.Seller?.Email ?? $"#{item.SellerId}")</td>
+                                            <td>
+                                                <div>@item.PackageName</div>
+                                                <div class="small text-muted">@item.Days ngày</div>
+                                            </td>
+                                            <td class="text-end fw-semibold">@String.Format("{0:N0}", item.Amount) đ</td>
+                                            <td><code>@item.TransferContent</code></td>
+                                            <td>
+                                                <span class="badge @StatusClass(item.Status)">@StatusLabel(item.Status)</span>
+                                                @if (item.Status == "Paid")
+                                                {
+                                                    <div class="small text-success mt-1">Đã bật quảng cáo</div>
+                                                }
+                                                else if (item.Status == "Pending")
+                                                {
+                                                    <div class="small text-muted mt-1">Chờ SePay báo tiền vào</div>
+                                                }
+                                            </td>
+                                            <td>@(item.ConfirmedDate?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                            <td class="text-end">
+                                                <a href="/Seller/AdvertisingPayment/@item.RequestId" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                                    Kiểm tra tự động
+                                                </a>
+                                                @if (item.Status == "Pending")
+                                                {
+                                                    <form method="post" action="/AdvertisingAdmin/ConfirmPayment/@item.RequestId" class="d-inline">
+                                                        <button class="btn btn-sm btn-success rounded-pill px-3" type="submit">Xác nhận tay</button>
+                                                    </form>
+                                                    <form method="post" action="/AdvertisingAdmin/RejectPayment/@item.RequestId" class="d-inline">
+                                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit">Chưa nhận</button>
+                                                    </form>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

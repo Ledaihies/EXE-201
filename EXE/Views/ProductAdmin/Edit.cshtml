@@ -1,0 +1,84 @@
+@model EXE.Models.Product
+
+@{
+	Layout = "~/Views/Shared/_AdminLayout.cshtml";
+	ViewData["Title"] = "Sửa sản phẩm";
+	var categories = ViewBag.Categories as List<EXE.Models.Category> ?? new();
+	var regions = ViewBag.Regions as List<EXE.Models.Region> ?? new();
+	var currentImage = Model.ProductImages?.OrderByDescending(x => x.ImageId).FirstOrDefault()?.ImageUrl ?? "no-image.png";
+}
+
+<div class="container-fluid py-3">
+	<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+		<h2 class="mb-0">Sửa sản phẩm #@Model.ProductId</h2>
+		<a href="/ProductAdmin" class="btn btn-outline-secondary rounded-pill px-4">Quay lại</a>
+	</div>
+
+	<form method="post" enctype="multipart/form-data" class="bg-white p-4 rounded shadow-sm" data-confirm="Bạn có chắc chắn muốn cập nhật sản phẩm này?">
+		<input type="hidden" name="ProductId" value="@Model.ProductId" />
+
+		<div class="row g-4">
+			<div class="col-lg-8">
+				<div class="mb-3">
+					<label class="form-label">Tên sản phẩm</label>
+					<input name="ProductName" class="form-control" value="@Model.ProductName" required />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Mô tả</label>
+					<textarea name="Description" class="form-control" rows="5">@Model.Description</textarea>
+				</div>
+
+				<div class="row g-3">
+					<div class="col-md-4">
+						<label class="form-label">Giá (đ)</label>
+						<input name="Price" type="number" min="0" step="1000" class="form-control" value="@(Model.Price ?? 0)" required />
+					</div>
+					<div class="col-md-4">
+						<label class="form-label">Tồn kho</label>
+						<input name="Stock" type="number" min="0" step="1" class="form-control" value="@(Model.Stock ?? 0)" />
+					</div>
+					<div class="col-md-4">
+						<label class="form-label">Thêm ảnh mới</label>
+						<input type="file" name="imageFile" accept="image/*" class="form-control" />
+					</div>
+				</div>
+			</div>
+
+			<div class="col-lg-4">
+				<div class="mb-3">
+					<label class="form-label">Danh mục</label>
+					<select name="CategoryId" class="form-select">
+						<option value="">-- Chọn danh mục --</option>
+						@foreach (var c in categories)
+						{
+							<option value="@c.CategoryId" selected="@(c.CategoryId == Model.CategoryId)">@c.CategoryName</option>
+						}
+					</select>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Vùng miền</label>
+					<select name="RegionId" class="form-select">
+						<option value="">-- Chọn vùng --</option>
+						@foreach (var r in regions)
+						{
+							<option value="@r.RegionId" selected="@(r.RegionId == Model.RegionId)">@r.RegionName (@r.Province)</option>
+						}
+					</select>
+				</div>
+
+				<div class="border rounded p-3">
+					<div class="fw-semibold mb-2">Ảnh hiện tại</div>
+					<img src="~/img/@currentImage" class="img-fluid rounded" style="height:180px; object-fit:cover; width:100%;" alt="">
+					<div class="text-muted small mt-2">Tải ảnh mới để thêm vào gallery.</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="d-flex justify-content-end mt-4">
+			<button type="submit" class="btn btn-primary rounded-pill px-5">Cập nhật</button>
+		</div>
+	</form>
+</div>
+

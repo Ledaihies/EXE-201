@@ -1,0 +1,457 @@
+@{
+	var title = ViewData["Title"] as string ?? "Quản trị - Nguồn Việt";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+	<meta charset="utf-8" />
+	<title>@title</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+	<link href="~/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="~/css/style.css" rel="stylesheet" />
+
+	<style>
+		body {
+			background-color: #f5f7fb;
+			font-family: 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+		}
+
+		.admin-shell {
+			min-height: 100vh;
+			display: grid;
+			grid-template-columns: 260px 1fr;
+			min-width: 0;
+		}
+
+		.admin-sidebar {
+			background: #fff;
+			border-right: 1px solid rgba(15, 23, 42, 0.06);
+		}
+
+		.admin-sidebar .brand {
+			padding: 1.25rem 1.5rem;
+			border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+		}
+
+		.admin-sidebar .brand h3 {
+			font-weight: 700;
+			color: #16a34a;
+			margin: 0;
+			font-size: 1.35rem;
+		}
+
+		.admin-sidebar .brand small {
+			color: #64748b;
+		}
+
+		.admin-nav {
+			padding: 1rem 0.75rem 1.5rem;
+		}
+
+		.admin-nav .nav-section {
+			padding: 0.75rem 0.75rem 0.25rem;
+			text-transform: uppercase;
+			font-size: 0.75rem;
+			font-weight: 600;
+			color: #94a3b8;
+		}
+
+		.admin-nav a {
+			display: flex;
+			align-items: center;
+			gap: 0.65rem;
+			padding: 0.55rem 0.9rem;
+			margin: 0.1rem 0.55rem;
+			border-radius: 999px;
+			color: #0f172a;
+			text-decoration: none;
+			font-size: 0.9rem;
+		}
+
+		.admin-nav a i {
+			width: 18px;
+			text-align: center;
+			color: #64748b;
+		}
+
+		.admin-nav a.active,
+		.admin-nav a:hover {
+			background: #ecfdf3;
+			color: #166534;
+		}
+
+		.admin-nav a.active i,
+		.admin-nav a:hover i {
+			color: #16a34a;
+		}
+
+		.admin-main {
+			display: flex;
+			flex-direction: column;
+			min-height: 100vh;
+			min-width: 0;
+		}
+
+		.admin-topbar {
+			min-height: 60px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 0 1.75rem;
+			background: #ffffff;
+			border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+			position: sticky;
+			top: 0;
+			z-index: 10;
+		}
+
+		.admin-topbar-title {
+			font-size: 1rem;
+			font-weight: 600;
+			color: #0f172a;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			max-width: 48vw;
+		}
+
+		.admin-topbar-sub {
+			font-size: 0.8rem;
+			color: #94a3b8;
+			white-space: nowrap;
+		}
+
+		.admin-topbar-actions {
+			display: flex;
+			align-items: center;
+			gap: .5rem;
+			flex: 0 0 auto;
+			white-space: nowrap;
+		}
+
+		.admin-topbar-actions a {
+			margin-left: 0;
+		}
+
+		.admin-content {
+			padding: 1.75rem 1.75rem 2.5rem;
+			flex: 1;
+			min-width: 0;
+		}
+
+		.admin-content .table-responsive {
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.admin-content .table {
+			min-width: 760px;
+		}
+
+		.admin-content .table th,
+		.admin-content .table td {
+			vertical-align: middle;
+		}
+
+		.admin-content .table th,
+		.admin-content .table td.text-end,
+		.admin-content .table td.text-center,
+		.admin-content .table .btn {
+			white-space: nowrap;
+		}
+
+		.admin-content .form-label {
+			font-weight: 600;
+			color: #334155;
+			margin-bottom: 0.4rem;
+		}
+
+		.admin-content .form-control,
+		.admin-content .form-select {
+			-webkit-appearance: none;
+			appearance: none;
+			min-height: 42px;
+			border-radius: 8px;
+			border: 1px solid #cbd5e1;
+			background-color: #fff;
+			color: #0f172a;
+			font: inherit;
+			line-height: 1.5;
+			box-shadow: none;
+		}
+
+		.admin-content textarea.form-control {
+			min-height: 96px;
+			resize: vertical;
+		}
+
+		.admin-content .form-control:focus,
+		.admin-content .form-select:focus {
+			border-color: #16a34a;
+			box-shadow: 0 0 0 .2rem rgba(22, 163, 74, .12);
+		}
+
+		.admin-content .form-control:disabled,
+		.admin-content .form-select:disabled {
+			background-color: #f1f5f9;
+			color: #64748b;
+			opacity: 1;
+		}
+
+		.admin-content .btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: .35rem;
+			min-height: 38px;
+			line-height: 1.2;
+			white-space: nowrap;
+			flex: 0 0 auto;
+		}
+
+		.admin-content .btn-sm {
+			min-height: 32px;
+		}
+
+		.nv-confirm-backdrop {
+			position: fixed;
+			inset: 0;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 1rem;
+			background: rgba(15, 23, 42, .48);
+			backdrop-filter: blur(3px);
+			z-index: 2000;
+		}
+
+		.nv-confirm-backdrop.is-open {
+			display: flex;
+		}
+
+		.nv-confirm-dialog {
+			width: min(440px, 100%);
+			border-radius: 8px;
+			background: #fff;
+			box-shadow: 0 24px 70px rgba(15, 23, 42, .26);
+			overflow: hidden;
+			transform: translateY(8px);
+			animation: nvConfirmIn .16s ease-out forwards;
+		}
+
+		@@keyframes nvConfirmIn {
+			to { transform: translateY(0); }
+		}
+
+		.nv-confirm-body {
+			padding: 1.35rem 1.35rem 1rem;
+			display: grid;
+			grid-template-columns: 44px 1fr;
+			gap: 1rem;
+		}
+
+		.nv-confirm-icon {
+			width: 44px;
+			height: 44px;
+			border-radius: 50%;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			background: #fee2e2;
+			color: #dc2626;
+			font-size: 1.1rem;
+		}
+
+		.nv-confirm-title {
+			margin: 0 0 .35rem;
+			color: #0f172a;
+			font-size: 1.05rem;
+			font-weight: 700;
+		}
+
+		.nv-confirm-message {
+			margin: 0;
+			color: #475569;
+			line-height: 1.55;
+		}
+
+		.nv-confirm-actions {
+			display: flex;
+			justify-content: flex-end;
+			gap: .65rem;
+			padding: 1rem 1.35rem 1.25rem;
+			background: #f8fafc;
+		}
+
+		@@media (max-width: 991.98px) {
+			.admin-shell {
+				grid-template-columns: 1fr;
+			}
+
+			.admin-sidebar {
+				display: none;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="admin-shell">
+		<aside class="admin-sidebar">
+			<div class="brand">
+				<h3>Nguồn Việt</h3>
+				<small>Trung tâm quản trị</small>
+			</div>
+			<nav class="admin-nav">
+				<div class="nav-section">Tổng quan</div>
+				<a href="/Admin" class="@(Context.Request.Path.StartsWithSegments("/Admin") ? "active" : "")">
+					<i class="fas fa-chart-pie"></i>
+					Bảng điều khiển
+				</a>
+
+				<div class="nav-section">Quản lý</div>
+				<a href="/ProductAdmin" class="@(Context.Request.Path.StartsWithSegments("/ProductAdmin") ? "active" : "")">
+					<i class="fas fa-box-open"></i>
+					Sản phẩm
+				</a>
+				<a href="/CategoryAdmin" class="@(Context.Request.Path.StartsWithSegments("/CategoryAdmin") ? "active" : "")">
+					<i class="fas fa-layer-group"></i>
+					Danh mục
+				</a>
+				<a href="/OrderAdmin" class="@(Context.Request.Path.StartsWithSegments("/OrderAdmin") ? "active" : "")">
+					<i class="fas fa-file-invoice-dollar"></i>
+					Đơn hàng
+				</a>
+				<a href="/AccountAdmin/Sellers" class="@(Context.Request.Path.StartsWithSegments("/AccountAdmin/Sellers") ? "active" : "")">
+					<i class="fas fa-store"></i>
+					Người bán
+				</a>
+				<a href="/AccountAdmin/Buyers" class="@(Context.Request.Path.StartsWithSegments("/AccountAdmin/Buyers") ? "active" : "")">
+					<i class="fas fa-users"></i>
+					Người mua
+				</a>
+				<a href="/RevenueAdmin" class="@(Context.Request.Path.StartsWithSegments("/RevenueAdmin") ? "active" : "")">
+					<i class="fas fa-coins"></i>
+					Doanh thu
+				</a>
+
+				<a href="/AdvertisingAdmin" class="@(Context.Request.Path.StartsWithSegments("/AdvertisingAdmin") ? "active" : "")">
+					<i class="fas fa-bullhorn"></i>
+					Quảng cáo
+				</a>
+				<a href="/VoucherAdmin" class="@(Context.Request.Path.StartsWithSegments("/VoucherAdmin") ? "active" : "")">
+					<i class="fas fa-ticket-alt"></i>
+					Mã ưu đãi
+				</a>
+
+				<div class="nav-section">Khác</div>
+				<a href="/" target="_blank">
+					<i class="fas fa-home"></i>
+					Xem trang khách
+				</a>
+				<a href="/Auth/Logout">
+					<i class="fas fa-sign-out-alt"></i>
+					Đăng xuất
+				</a>
+			</nav>
+		</aside>
+
+		<div class="admin-main">
+			<header class="admin-topbar">
+				<div>
+					<div class="admin-topbar-title">@(ViewData["Title"] ?? "Bảng điều khiển")</div>
+					<div class="admin-topbar-sub">Quản trị hệ thống Nguồn Việt</div>
+				</div>
+				<div class="admin-topbar-actions">
+					<a href="/ProductAdmin/Create" class="btn btn-sm btn-success rounded-pill px-3">
+						<i class="fas fa-plus me-1"></i> Thêm sản phẩm
+					</a>
+					<a href="/" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+						<i class="fas fa-external-link-alt me-1"></i> Xem website
+					</a>
+				</div>
+			</header>
+
+			<main class="admin-content">
+				@RenderBody()
+			</main>
+		</div>
+	</div>
+
+	<div class="nv-confirm-backdrop" id="nvConfirm" aria-hidden="true">
+		<div class="nv-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="nvConfirmTitle">
+			<div class="nv-confirm-body">
+				<div class="nv-confirm-icon">
+					<i class="fas fa-exclamation"></i>
+				</div>
+				<div>
+					<h3 class="nv-confirm-title" id="nvConfirmTitle">Xác nhận thao tác</h3>
+					<p class="nv-confirm-message" id="nvConfirmMessage">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+				</div>
+			</div>
+			<div class="nv-confirm-actions">
+				<button type="button" class="btn btn-outline-secondary rounded-pill px-4" id="nvConfirmCancel">Hủy</button>
+				<button type="button" class="btn btn-danger rounded-pill px-4" id="nvConfirmAccept">Xác nhận</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+	<script src="~/js/bootstrap.bundle.min.js"></script>
+	<script>
+		(function () {
+			const modal = document.getElementById('nvConfirm');
+			const message = document.getElementById('nvConfirmMessage');
+			const cancel = document.getElementById('nvConfirmCancel');
+			const accept = document.getElementById('nvConfirmAccept');
+			let pendingForm = null;
+
+			function closeConfirm() {
+				modal.classList.remove('is-open');
+				modal.setAttribute('aria-hidden', 'true');
+				pendingForm = null;
+			}
+
+			document.addEventListener('submit', function (event) {
+				const form = event.target.closest('form[data-confirm]');
+				if (!form || form.dataset.confirmed === 'true') return;
+
+				event.preventDefault();
+				pendingForm = form;
+				message.textContent = form.dataset.confirm || 'Bạn có chắc chắn muốn thực hiện thao tác này?';
+				modal.classList.add('is-open');
+				modal.setAttribute('aria-hidden', 'false');
+				accept.focus();
+			}, true);
+
+			accept.addEventListener('click', function () {
+				if (!pendingForm) return;
+				const form = pendingForm;
+				form.dataset.confirmed = 'true';
+				closeConfirm();
+				form.requestSubmit();
+			});
+
+			cancel.addEventListener('click', closeConfirm);
+			modal.addEventListener('click', function (event) {
+				if (event.target === modal) closeConfirm();
+			});
+			document.addEventListener('keydown', function (event) {
+				if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+					closeConfirm();
+				}
+			});
+		})();
+	</script>
+
+	@RenderSection("Scripts", required: false)
+</body>
+</html>

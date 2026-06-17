@@ -1,0 +1,64 @@
+@model IEnumerable<EXE.Models.Category>
+@{
+	Layout = "~/Views/Shared/_AdminLayout.cshtml";
+	ViewData["Title"] = "Quản lý danh mục";
+}
+
+<div class="container-fluid py-3">
+	<div class="d-flex justify-content-between align-items-center mb-4">
+		<h2 class="mb-0">Quản lý danh mục</h2>
+		<a href="/CategoryAdmin/Create" class="btn btn-primary rounded-pill px-4">
+			<i class="fas fa-plus me-2"></i>Thêm danh mục
+		</a>
+	</div>
+
+	@if (TempData["Error"] is string err && !string.IsNullOrWhiteSpace(err))
+	{
+		<div class="alert alert-warning">@err</div>
+	}
+
+	<div class="table-responsive bg-white rounded shadow-sm">
+		<table class="table mb-0">
+			<thead class="table-light">
+				<tr>
+					<th style="width:80px;">ID</th>
+					<th>Tên danh mục</th>
+					<th>Mô tả</th>
+					<th style="width:140px;" class="text-end">Thao tác</th>
+				</tr>
+			</thead>
+			<tbody>
+				@if (!Model.Any())
+				{
+					<tr>
+						<td colspan="4" class="text-center py-4 text-muted">
+							Chưa có danh mục nào.
+						</td>
+					</tr>
+				}
+				else
+				{
+					@foreach (var c in Model)
+					{
+						<tr>
+							<td>@c.CategoryId</td>
+							<td>@c.CategoryName</td>
+							<td class="text-muted">@c.Description</td>
+							<td class="text-end">
+								<a href="/CategoryAdmin/Edit/@c.CategoryId" class="btn btn-sm btn-outline-secondary rounded-pill px-3 me-2">
+									Sửa
+								</a>
+								<form method="post" action="/CategoryAdmin/Delete/@c.CategoryId" class="d-inline" data-confirm="Bạn có chắc chắn muốn xóa danh mục này?">
+									<button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+										Xóa
+									</button>
+								</form>
+							</td>
+						</tr>
+					}
+				}
+			</tbody>
+		</table>
+	</div>
+</div>
+

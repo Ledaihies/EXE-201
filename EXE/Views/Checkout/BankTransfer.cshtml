@@ -1,0 +1,86 @@
+@model EXE.ViewModels.BankTransferPaymentViewModel
+
+<div class="container-fluid page-header py-5">
+	<h1 class="text-center text-white display-6">Thanh toán chuyển khoản</h1>
+	<ol class="breadcrumb justify-content-center mb-0">
+		<li class="breadcrumb-item"><a href="/" class="text-white-50">Trang chủ</a></li>
+		<li class="breadcrumb-item"><a href="/Cart" class="text-white-50">Giỏ hàng</a></li>
+		<li class="breadcrumb-item active text-white">VietQR</li>
+	</ol>
+</div>
+
+@if (!Model.IsPaid)
+{
+	<script>
+		(() => {
+			const statusUrl = '@Url.Action("BankTransferStatus", "Checkout", new { id = Model.Order.OrderId })';
+			let checking = false;
+
+			const checkPayment = async () => {
+				if (checking) return;
+				checking = true;
+				try {
+					const response = await fetch(statusUrl, { cache: 'no-store' });
+					if (!response.ok) return;
+					const data = await response.json();
+					if (data.isPaid) {
+						window.location.reload();
+					}
+				} finally {
+					checking = false;
+				}
+			};
+
+			checkPayment();
+			setInterval(checkPayment, 2000);
+		})();
+	</script>
+}
+
+<div class="container py-5">
+	<div class="row justify-content-center">
+		<div class="col-lg-8">
+			<div class="card border-0 shadow-sm rounded-3">
+				<div class="card-body p-4 p-md-5">
+					@if (Model.IsPaid)
+					{
+						<div class="alert alert-success mb-4">
+							<i class="fas fa-check-circle me-2"></i>Đã nhận thanh toán cho đơn #@Model.Order.OrderId.
+						</div>
+					}
+					else
+					{
+						<div class="alert alert-warning mb-4">
+							<i class="fas fa-clock me-2"></i>Đơn #@Model.Order.OrderId đang chờ chuyển khoản. Hệ thống sẽ tự xác nhận khi ngân hàng báo giao dịch.
+						</div>
+					}
+
+					<div class="row g-4 align-items-center">
+						<div class="col-md-6 text-center">
+							<img src="@Model.QrUrl" class="img-fluid rounded-3 border" alt="VietQR đơn #@Model.Order.OrderId" style="max-width: 360px;">
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<div class="text-muted small">Số tiền</div>
+								<div class="h4 text-primary mb-0">@String.Format("{0:N0}", Model.Order.TotalAmount ?? 0) đ</div>
+							</div>
+							<div class="mb-3">
+								<div class="text-muted small">Nội dung chuyển khoản</div>
+								<div class="fs-5 fw-bold">@Model.PaymentCode</div>
+							</div>
+							<div class="small text-muted mb-4">
+								Vui lòng giữ đúng số tiền và nội dung chuyển khoản để hệ thống đối chiếu tự động.
+							</div>
+							<a href="/Checkout/BankTransfer/@Model.Order.OrderId" class="btn btn-primary rounded-pill px-4">
+								<i class="fas fa-sync-alt me-2"></i>Kiểm tra lại
+							</a>
+							<a href="/" class="btn btn-outline-secondary rounded-pill px-4 ms-2">
+								<i class="fas fa-home me-2"></i>Trang chủ
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

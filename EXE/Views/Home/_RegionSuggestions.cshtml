@@ -1,0 +1,102 @@
+@model IEnumerable<EXE.Models.Product>
+
+@{
+	var products = (Model ?? Enumerable.Empty<EXE.Models.Product>()).ToList();
+	var location = (string?)ViewBag.Location;
+	var locationLabel = string.IsNullOrWhiteSpace(location) ? "Goi y noi bat" : location;
+}
+
+<div class="nv-region-card card border-0 shadow-sm h-100">
+	<div class="card-body p-3 p-md-4 d-flex flex-column h-100">
+		<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3 nv-region-header">
+			<div>
+				<div class="d-flex align-items-center gap-2">
+					<div class="nv-icon-badge bg-primary text-white">
+						<i class="fas fa-map-marked-alt"></i>
+					</div>
+					<h3 class="mb-0 nv-region-title">&#272;&#7863;c s&#7843;n theo khu v&#7921;c</h3>
+				</div>
+				<div class="text-muted small mt-1">
+					&#272;ang hi&#7875;n th&#7883;: <span class="fw-semibold">@locationLabel</span>
+				</div>
+			</div>
+			<div class="d-flex align-items-center gap-2">
+				<span class="badge rounded-pill text-bg-light border">
+					<i class="fas fa-location-dot me-1 text-primary"></i>@products.Count s&#7843;n ph&#7849;m
+				</span>
+			</div>
+		</div>
+
+		<div class="nv-region-scroll flex-grow-1 mt-2">
+			@if (!products.Any())
+			{
+				<div class="nv-empty-state border rounded-4 p-4 bg-light">
+					<div class="d-flex align-items-start gap-3">
+						<div class="nv-icon-badge bg-secondary text-white">
+							<i class="fas fa-magnifying-glass"></i>
+						</div>
+						<div>
+							<div class="fw-semibold mb-1">Ch&#432;a c&#243; g&#7907;i &#253; ph&#249; h&#7907;p</div>
+							<div class="text-muted small">
+								B&#7841;n c&#243; th&#7875; b&#7845;m &#8220;&#272;&#7883;nh v&#7883;&#8221; ho&#7863;c click tr&#234;n b&#7843;n &#273;&#7891; &#273;&#7875; ch&#7885;n khu v&#7921;c kh&#225;c.
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+			else
+			{
+				<div class="row g-3 row-cols-1 row-cols-lg-2 nv-region-products-grid" data-nearby-products-grid>
+					@for (var i = 0; i < products.Count; i++)
+					{
+						var item = products[i];
+						var image = item.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+						var regionName = item.Region?.RegionName ?? "Dac san";
+
+						<div class="col" data-nearby-product-item data-nearby-index="@i">
+							<div class="nv-product-mini card border-0 shadow-sm h-100">
+								<div class="row g-0 h-100 flex-md-nowrap">
+									<div class="col-5 col-md-4 col-xl-3">
+										<div class="nv-thumb nv-thumb--compact h-100">
+											<img src="~/img/@image" class="img-fluid" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+											<div class="nv-region-pill nv-region-pill--compact">@regionName</div>
+										</div>
+									</div>
+									<div class="col-7 col-md-8 col-xl-9">
+										<div class="card-body p-3 p-md-3 d-flex flex-column h-100 nv-product-mini__body">
+											<div class="nv-region-product-title">@item.ProductName</div>
+											<div class="text-muted nv-region-product-desc nv-2line mt-1">
+												@item.Description
+											</div>
+											<div class="mt-auto pt-2 d-flex align-items-end justify-content-between gap-2 flex-wrap">
+												<div class="nv-region-product-price">
+													@String.Format("{0:N0}", item.Price ?? 0) &#273;
+												</div>
+												<div class="d-flex align-items-center gap-2">
+													<a href="/Product/Details/@item.ProductId" class="btn btn-sm btn-outline-primary rounded-pill px-3 nv-region-btn-view">
+														Xem
+													</a>
+													<a href="/Cart/Add/@item.ProductId"
+													   class="btn btn-sm btn-primary rounded-pill px-2 nv-region-btn-cart"
+													   aria-label="Them vao gio">
+														<i class="fa fa-shopping-bag"></i>
+													</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+
+				<div class="nv-region-pagination" data-nearby-pagination hidden>
+					<button type="button" class="btn btn-sm btn-outline-primary rounded-pill nv-region-page-btn" data-nearby-prev>Tr&#432;&#7899;c</button>
+					<span class="nv-region-page-status" data-nearby-page-status>1 / 1</span>
+					<button type="button" class="btn btn-sm btn-outline-primary rounded-pill nv-region-page-btn" data-nearby-next>Sau</button>
+				</div>
+			}
+		</div>
+	</div>
+</div>

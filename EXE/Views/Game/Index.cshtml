@@ -1,0 +1,654 @@
+@model EXE.ViewModels.GameIndexViewModel
+@using System.Text.Json
+@{
+	ViewData["Title"] = "Trò chơi";
+	var productsJson = JsonSerializer.Serialize(Model?.Products ?? new List<EXE.ViewModels.GameProductDto>(), new JsonSerializerOptions
+	{
+		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+	});
+}
+
+<div class="container py-5">
+	<div class="mb-4 mb-lg-5 text-center text-lg-start">
+		<div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-success-subtle text-success-emphasis small fw-semibold text-uppercase" style="letter-spacing:.18em;">
+			<span>🎮 Trò chơi đặc sản</span>
+			<span class="d-none d-sm-inline">Nguồn Việt</span>
+		</div>
+		<div class="row align-items-center mt-3 g-3 g-lg-4">
+			<div class="col-lg-7">
+				<h1 class="h3 h-lg-2 fw-bold text-dark mb-2">Đoán đặc sản Việt Nam</h1>
+				<p class="text-muted mb-0">
+					Chọn 1 trong 4 đáp án để đoán đúng đặc sản thật đang bán trên Nguồn Việt. Càng đúng liên tiếp, streak càng dài và điểm càng cao.
+				</p>
+			</div>
+			<div class="col-lg-5">
+				<div class="d-flex flex-wrap justify-content-center justify-content-lg-end gap-2 small text-muted">
+					<div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-light border">
+						<i class="bi bi-check2-circle text-success"></i>
+						<span>Đúng: + điểm + cộng streak</span>
+					</div>
+					<div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-light border">
+						<i class="bi bi-x-circle text-danger"></i>
+						<span>Sai: -3 điểm, streak về 0</span>
+					</div>
+					<div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-light border">
+						<i class="bi bi-lightbulb text-warning"></i>
+						<span>Gợi ý: -5 điểm mỗi lần mở</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<style>
+		.nv-game-shell {
+			border-radius: 22px;
+			background: radial-gradient(circle at top left, rgba(16, 185, 129, .12), transparent 55%), radial-gradient(circle at bottom right, rgba(56, 189, 248, .10), transparent 50%), #ffffff;
+		}
+
+		.nv-quiz-choice {
+			text-align: left;
+			border-radius: 16px;
+			border: 1px solid rgba(148, 163, 184, .45);
+			background: #fff;
+			padding: 12px 14px;
+			transition: transform .08s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease;
+		}
+
+		.nv-quiz-choice:hover {
+			transform: translateY(-1px);
+			border-color: rgba(13, 110, 253, .6);
+			background: rgba(13, 110, 253, .04);
+			box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+		}
+
+		.nv-quiz-choice.is-correct {
+			border-color: rgba(25, 135, 84, .7);
+			background: linear-gradient(135deg, rgba(16, 185, 129, .08), rgba(22, 163, 74, .04));
+			box-shadow: 0 10px 26px rgba(22, 163, 74, .20);
+		}
+
+		.nv-quiz-choice.is-wrong {
+			border-color: rgba(220, 53, 69, .65);
+			background: linear-gradient(135deg, rgba(248, 113, 113, .12), rgba(248, 113, 113, .02));
+			box-shadow: 0 10px 26px rgba(248, 113, 113, .16);
+		}
+
+		.nv-game-stat {
+			border: 1px solid rgba(148, 163, 184, .45);
+			border-radius: 14px;
+			padding: 10px 12px;
+			background: rgba(255, 255, 255, .9);
+		}
+
+		.nv-game-stat-label {
+			font-size: .75rem;
+			letter-spacing: .08em;
+			text-transform: uppercase;
+		}
+
+		.nv-game-chip {
+			border: 1px solid rgba(148, 163, 184, .55);
+			background: #fff;
+			border-radius: 999px;
+			padding: .4rem .9rem;
+			font-size: .9rem;
+			font-weight: 700;
+			color: #0f172a;
+		}
+
+		.nv-game-chip.is-on {
+			border-color: rgba(25, 135, 84, .55);
+			background: rgba(25, 135, 84, .10);
+			color: #14532d;
+		}
+
+		.nv-game-howto-step {
+			display: flex;
+			gap: .75rem;
+			align-items: flex-start;
+		}
+
+		.nv-game-howto-step-index {
+			width: 26px;
+			height: 26px;
+			border-radius: 999px;
+			background: rgba(15, 23, 42, .06);
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			font-size: .8rem;
+			font-weight: 700;
+			color: #0f172a;
+			margin-top: .1rem;
+		}
+
+		@@media (max-width: 576px) {
+			.nv-game-shell {
+				border-radius: 18px;
+			}
+		}
+	</style>
+
+	<div class="card border-0 shadow-sm nv-game-shell overflow-hidden">
+		<div class="card-body p-3 p-md-4 p-lg-5">
+			<div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+				<button type="button" class="nv-game-chip" id="toggleSound">🔊 Âm thanh: Tắt</button>
+				<button type="button" class="nv-game-chip is-on" id="toggleEasy">🙂 Dễ</button>
+				<button type="button" class="nv-game-chip" id="toggleHard">🔥 Khó</button>
+			</div>
+
+			<div class="row g-4 align-items-stretch">
+				<div class="col-lg-8">
+					<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+						<div class="d-flex gap-2 flex-wrap">
+							<div class="nv-game-stat">
+								<div class="nv-game-stat-label text-muted">Câu</div>
+								<div class="fw-bold"><span id="quizQIndex">1</span>/<span id="quizTotal">20</span></div>
+							</div>
+							<div class="nv-game-stat">
+								<div class="nv-game-stat-label text-muted">Điểm</div>
+								<div class="fw-bold" id="quizScore">0</div>
+							</div>
+							<div class="nv-game-stat">
+								<div class="nv-game-stat-label text-muted">Streak</div>
+								<div class="fw-bold" id="quizStreak">0</div>
+							</div>
+						</div>
+						<div class="d-flex gap-2">
+							<button class="btn btn-outline-secondary rounded-pill px-3" type="button" id="quizHintBtn">
+								Gợi ý (-5)
+							</button>
+							<button class="btn btn-outline-secondary rounded-pill px-3" type="button" id="quizResetBtn">
+								Reset
+							</button>
+						</div>
+					</div>
+
+					<div class="mt-2">
+						<div class="progress" style="height: 8px; background-color: rgba(148,163,184,.25);">
+							<div id="quizProgressBar" class="progress-bar bg-success" role="progressbar"
+								 style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+						</div>
+						<div class="d-flex justify-content-between small text-muted mt-1">
+							<span>Bắt đầu</span>
+							<span>Hoàn thành</span>
+						</div>
+					</div>
+
+					<div class="p-3 p-md-4 rounded-4 bg-light border">
+						<div class="fw-bold mb-2" id="quizQuestionTitle">Câu hỏi</div>
+						<div class="text-muted" id="quizQuestionText">...</div>
+						<div class="mt-3 d-none" id="quizHintBox">
+							<div class="small text-muted mb-1">Gợi ý:</div>
+							<div class="fw-semibold" id="quizHintText"></div>
+						</div>
+					</div>
+
+					<div class="row g-3 mt-1" id="quizChoices"></div>
+
+					<div class="mt-3 small" id="quizFeedback"></div>
+					<div class="mt-3 d-flex flex-wrap gap-2">
+						<a class="btn btn-primary rounded-pill px-4 d-none" id="quizCta" href="/Product">
+							Xem sản phẩm
+						</a>
+						<button class="btn btn-success rounded-pill px-4" type="button" id="quizNextBtn">
+							Câu tiếp theo
+						</button>
+					</div>
+				</div>
+				<div class="col-lg-4">
+					<div class="p-4 rounded-4 border bg-white h-100 d-flex flex-column">
+						<h5 class="mb-2">Quiz “câu chữ” chơi thế nào?</h5>
+						<div class="mb-3">
+							<div class="nv-game-howto-step mb-2">
+								<div class="nv-game-howto-step-index">1</div>
+								<div class="text-muted">
+									<strong>Đọc kỹ lời văn</strong> mô tả hương vị, vùng miền, danh mục hoặc mức giá của một sản phẩm thật.
+								</div>
+							</div>
+							<div class="nv-game-howto-step mb-2">
+								<div class="nv-game-howto-step-index">2</div>
+								<div class="text-muted">
+									<strong>Chọn 1 trong 4 đáp án</strong> là tên đặc sản phù hợp nhất với mô tả ở bên trái.
+								</div>
+							</div>
+							<div class="nv-game-howto-step mb-2">
+								<div class="nv-game-howto-step-index">3</div>
+								<div class="text-muted">
+									Nếu bí, bấm <strong>Gợi ý (-5)</strong> để mở thêm manh mối về vùng miền, danh mục hoặc mô tả rút gọn.
+								</div>
+							</div>
+							<div class="nv-game-howto-step mb-2">
+								<div class="nv-game-howto-step-index">4</div>
+								<div class="text-muted">
+									Đúng liên tiếp sẽ tăng <strong>streak</strong>, giúp bạn nhận thêm điểm thưởng. Sai sẽ mất điểm và reset streak về 0.
+								</div>
+							</div>
+						</div>
+						<ul class="text-muted mb-3 small">
+							<li>Mỗi câu là một <strong>mẫu lời văn khác nhau</strong> (mô tả, vùng miền, danh mục, giá...).</li>
+							<li>Dữ liệu lấy từ <strong>sản phẩm thật</strong> trong DB nên mỗi lần chơi sẽ khá khác nhau.</li>
+							<li>Có 2 chế độ: <strong>Dễ</strong> (gợi ý rõ ràng hơn) và <strong>Khó</strong> (gợi ý ngắn, nhiễu hơn).</li>
+						</ul>
+						<div class="small text-muted mt-auto" id="gameDataInfo"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		(function () {
+			// -------------------------
+			// Helpers
+			// -------------------------
+			function normalizeText(s) {
+				return (s || '')
+					.toLowerCase()
+					.normalize('NFD')
+					.replace(/[\u0300-\u036f]/g, '')
+					.replace(/[^a-z0-9\s]/g, ' ')
+					.replace(/\s+/g, ' ')
+					.trim();
+			}
+
+			function shuffle(arr) {
+				const a = arr.slice();
+				for (let i = a.length - 1; i > 0; i--) {
+					const j = Math.floor(Math.random() * (i + 1));
+					[a[i], a[j]] = [a[j], a[i]];
+				}
+				return a;
+			}
+
+			// -------------------------
+			// Dataset (DB -> ViewModel). Nếu rỗng thì dùng demo.
+			// -------------------------
+			const dbProducts = @Html.Raw(productsJson);
+
+			function resolveImg(url) {
+				const u = (url || '').trim();
+				if (!u) return '/img/no-image.svg';
+				if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('/')) return u;
+				return '/img/' + u.replace(/^~\/img\//, '');
+			}
+
+			const demo = [
+				{ productId: 0, name: 'Bánh pía Sóc Trăng', description: 'Vỏ nhiều lớp, nhân đậu xanh + sầu riêng.', category: 'Bánh', region: 'Miền Nam', province: 'Sóc Trăng', imageUrl: 'hero-img-3.jpg' },
+				{ productId: 0, name: 'Nem chua Thanh Hóa', description: 'Lên men chua nhẹ, dai giòn.', category: 'Đồ chua', region: 'Miền Trung', province: 'Thanh Hóa', imageUrl: 'hero-img-1.jpg' },
+				{ productId: 0, name: 'Mực một nắng Phan Thiết', description: 'Hải sản phơi 1 nắng, nướng lên thơm ngọt.', category: 'Hải sản khô', region: 'Miền Trung', province: 'Bình Thuận', imageUrl: 'hero-img-2.jpg' },
+				{ productId: 0, name: 'Nước mắm Phú Quốc', description: 'Độ đạm cao, thơm đậm.', category: 'Gia vị', region: 'Miền Nam', province: 'Kiên Giang', imageUrl: 'hero-img-3.jpg' },
+				{ productId: 0, name: 'Kẹo mè xửng Huế', description: 'Mè + mạch nha, dẻo thơm.', category: 'Kẹo', region: 'Miền Trung', province: 'Huế', imageUrl: 'hero-img-1.jpg' }
+			];
+
+			const usingDemo = !(Array.isArray(dbProducts) && dbProducts.length >= 8);
+			const items = (usingDemo ? demo : dbProducts).map(p => ({
+				productId: p.productId || 0,
+				name: p.name || 'Đặc sản',
+				description: p.description || '',
+				price: p.price,
+				category: p.category || '',
+				region: p.region || '',
+				province: p.province || '',
+				image: resolveImg(p.imageUrl || '')
+			}));
+
+			const dataInfoEl = document.getElementById('gameDataInfo');
+			if (dataInfoEl) {
+				dataInfoEl.innerHTML = usingDemo ? 'Đang dùng dữ liệu demo (DB chưa đủ sản phẩm).' : `Đang dùng dữ liệu thật: <strong>${items.length}</strong> sản phẩm.`;
+			}
+
+			// -------------------------
+			// “Soul”: sound + difficulty + tiny feedback
+			// -------------------------
+			let soundOn = false;
+			let hardMode = false;
+			const toggleSound = document.getElementById('toggleSound');
+			const toggleEasy = document.getElementById('toggleEasy');
+			const toggleHard = document.getElementById('toggleHard');
+
+			function beep(freq, ms) {
+				if (!soundOn) return;
+				try {
+					const ctx = new (window.AudioContext || window.webkitAudioContext)();
+					const o = ctx.createOscillator();
+					const g = ctx.createGain();
+					o.type = 'sine';
+					o.frequency.value = freq;
+					o.connect(g);
+					g.connect(ctx.destination);
+					g.gain.value = 0.02;
+					o.start();
+					setTimeout(() => { o.stop(); ctx.close(); }, ms);
+				} catch (_) { }
+			}
+
+			function setDifficulty(isHard) {
+				hardMode = !!isHard;
+				if (toggleEasy) toggleEasy.classList.toggle('is-on', !hardMode);
+				if (toggleHard) toggleHard.classList.toggle('is-on', hardMode);
+			}
+
+			if (toggleSound) {
+				toggleSound.addEventListener('click', function () {
+					soundOn = !soundOn;
+					toggleSound.classList.toggle('is-on', soundOn);
+					toggleSound.textContent = soundOn ? '🔊 Âm thanh: Bật' : '🔊 Âm thanh: Tắt';
+					beep(660, 80);
+				});
+			}
+			if (toggleEasy) toggleEasy.addEventListener('click', () => setDifficulty(false));
+			if (toggleHard) toggleHard.addEventListener('click', () => setDifficulty(true));
+			setDifficulty(false);
+
+			// =========================================================
+			// Game: Quiz chữ (4 đáp án)
+			// =========================================================
+			const quizTotalEl = document.getElementById('quizTotal');
+			const quizQIndexEl = document.getElementById('quizQIndex');
+			const quizScoreEl = document.getElementById('quizScore');
+			const quizStreakEl = document.getElementById('quizStreak');
+			const quizChoicesEl = document.getElementById('quizChoices');
+			const quizQuestionTitleEl = document.getElementById('quizQuestionTitle');
+			const quizQuestionTextEl = document.getElementById('quizQuestionText');
+			const quizHintBtn = document.getElementById('quizHintBtn');
+			const quizHintBox = document.getElementById('quizHintBox');
+			const quizHintText = document.getElementById('quizHintText');
+			const quizFeedback = document.getElementById('quizFeedback');
+			const quizNextBtn = document.getElementById('quizNextBtn');
+			const quizResetBtn = document.getElementById('quizResetBtn');
+			const quizCta = document.getElementById('quizCta');
+			const quizProgressBar = document.getElementById('quizProgressBar');
+
+			const QUESTION_COUNT = 20;
+
+			function num(v) {
+				const n = typeof v === 'number' ? v : (v == null ? NaN : Number(v));
+				return Number.isFinite(n) ? n : NaN;
+			}
+
+			function formatPrice(v) {
+				const n = num(v);
+				if (!Number.isFinite(n)) return '';
+				try {
+					return n.toLocaleString('vi-VN') + 'đ';
+				} catch (_) {
+					return String(n) + 'đ';
+				}
+			}
+
+			function pickDistinct(arr, count, keyFn) {
+				const out = [];
+				const seen = new Set();
+				for (const x of shuffle(arr)) {
+					const k = keyFn ? keyFn(x) : x;
+					if (seen.has(k)) continue;
+					seen.add(k);
+					out.push(x);
+					if (out.length >= count) break;
+				}
+				return out;
+			}
+
+			function pickDistractors(correctName, needed, prefer) {
+				const pool = items.filter(x => x.name && x.name !== correctName);
+				const preferPool = Array.isArray(prefer) ? prefer.filter(x => x.name && x.name !== correctName) : [];
+				const picked = [];
+				const used = new Set([correctName]);
+
+				for (const x of shuffle(preferPool)) {
+					if (picked.length >= needed) break;
+					if (used.has(x.name)) continue;
+					used.add(x.name);
+					picked.push(x.name);
+				}
+				for (const x of shuffle(pool)) {
+					if (picked.length >= needed) break;
+					if (used.has(x.name)) continue;
+					used.add(x.name);
+					picked.push(x.name);
+				}
+				return picked;
+			}
+
+			function buildQuestionForProduct(p) {
+				const hasDesc = !!(p.description && String(p.description).trim().length >= (hardMode ? 24 : 14));
+				const hasCat = !!(p.category && String(p.category).trim());
+				const hasLoc = !!((p.province && String(p.province).trim()) || (p.region && String(p.region).trim()));
+				const hasPrice = Number.isFinite(num(p.price));
+
+				const templates = [];
+				if (hasDesc) templates.push('desc');
+				if (hasLoc) templates.push('loc');
+				if (hasCat) templates.push('cat');
+				if (hasPrice) templates.push('price');
+				templates.push('name'); // always available fallback
+
+				const kind = shuffle(templates)[0];
+				const correct = p.name;
+
+				if (kind === 'desc') {
+					const raw = String(p.description || '').trim();
+					const limit = hardMode ? 90 : 140;
+					const snippet = raw.length > limit ? raw.slice(0, limit).trim() + '…' : raw;
+					const other = items.filter(x => x.name !== correct && x.description);
+					const distract = pickDistractors(correct, 3, other);
+					return {
+						answer: correct,
+						productId: p.productId,
+						title: 'Đố vui đặc sản',
+						text: `Mô tả sau đang nói về đặc sản nào?\n“${snippet}”`,
+						hint: [p.category ? `Danh mục: ${p.category}` : '', (p.province || p.region) ? `Vùng/địa phương: ${p.province || p.region}` : ''].filter(Boolean).join(' • ') || 'Thử nhìn kỹ cách mô tả hương vị/đặc trưng.',
+						choices: shuffle([correct].concat(distract))
+					};
+				}
+
+				if (kind === 'loc') {
+					const loc = (p.province || p.region || '').trim();
+					const sameLoc = items.filter(x => (x.province || x.region || '').trim() === loc && x.name !== correct);
+					const distract = pickDistractors(correct, 3, hardMode ? [] : sameLoc);
+					return {
+						answer: correct,
+						productId: p.productId,
+						title: 'Đố vui vùng miền',
+						text: `Đặc sản nào gắn với địa phương “${loc}”?`,
+						hint: [p.category ? `Danh mục: ${p.category}` : '', (p.description || '').trim() ? `Mô tả: ${String(p.description).trim().slice(0, hardMode ? 70 : 110)}${String(p.description).trim().length > (hardMode ? 70 : 110) ? '…' : ''}` : ''].filter(Boolean).join(' • ') || 'Gợi ý có thể nằm trong tên địa danh.',
+						choices: shuffle([correct].concat(distract))
+					};
+				}
+
+				if (kind === 'cat') {
+					const cat = (p.category || '').trim();
+					const sameCat = items.filter(x => (x.category || '').trim() === cat && x.name !== correct);
+					const distract = pickDistractors(correct, 3, hardMode ? [] : sameCat);
+					return {
+						answer: correct,
+						productId: p.productId,
+						title: 'Đố vui theo danh mục',
+						text: `Sản phẩm nào thuộc danh mục “${cat}”?`,
+						hint: [(p.province || p.region) ? `Vùng/địa phương: ${p.province || p.region}` : '', (p.description || '').trim() ? `Mô tả: ${String(p.description).trim().slice(0, hardMode ? 70 : 110)}${String(p.description).trim().length > (hardMode ? 70 : 110) ? '…' : ''}` : ''].filter(Boolean).join(' • ') || 'Nếu bạn biết “nhóm” món ăn, câu này sẽ rất nhanh.',
+						choices: shuffle([correct].concat(distract))
+					};
+				}
+
+				if (kind === 'price') {
+					const priceText = formatPrice(p.price);
+					const n = num(p.price);
+					const byPrice = items
+						.filter(x => x.name !== correct && Number.isFinite(num(x.price)))
+						.sort((a, b) => Math.abs(num(a.price) - n) - Math.abs(num(b.price) - n));
+					const distract = pickDistractors(correct, 3, byPrice.slice(0, 10));
+					const band = hardMode ? 'xấp xỉ' : 'khoảng';
+					return {
+						answer: correct,
+						productId: p.productId,
+						title: 'Đố vui theo giá',
+						text: `Sản phẩm nào có giá ${band} ${priceText}?`,
+						hint: [p.category ? `Danh mục: ${p.category}` : '', (p.province || p.region) ? `Vùng/địa phương: ${p.province || p.region}` : ''].filter(Boolean).join(' • ') || 'Nhìn danh mục/vùng miền để đoán nhanh hơn.',
+						choices: shuffle([correct].concat(distract))
+					};
+				}
+
+				// name fallback (避免太无聊：给一点点文字线索)
+				const clean = String(p.name || '').trim();
+				const first = clean ? clean[0].toUpperCase() : '';
+				const len = clean.replace(/\s+/g, '').length;
+				const distract = pickDistractors(correct, 3);
+				return {
+					answer: correct,
+					productId: p.productId,
+					title: 'Đố nhanh',
+					text: `Đặc sản nào có tên bắt đầu bằng chữ “${first}” và có khoảng ${len} ký tự (không tính khoảng trắng)?`,
+					hint: [(p.category || '').trim() ? `Danh mục: ${p.category}` : '', (p.province || p.region) ? `Vùng/địa phương: ${p.province || p.region}` : '', (p.description || '').trim() ? `Mô tả: ${String(p.description).trim().slice(0, hardMode ? 60 : 90)}${String(p.description).trim().length > (hardMode ? 60 : 90) ? '…' : ''}` : ''].filter(Boolean).join(' • ') || 'Dùng nút gợi ý để mở thêm manh mối.',
+					choices: shuffle([correct].concat(distract))
+				};
+			}
+
+			function buildQuizQuestions() {
+				const base = pickDistinct(items, Math.min(QUESTION_COUNT, items.length), x => x.name);
+				const qs = [];
+				for (const p of base) {
+					const q = buildQuestionForProduct(p);
+					// Ensure 4 choices unique
+					q.choices = pickDistinct(q.choices, Math.min(4, q.choices.length), x => x);
+					while (q.choices.length < 4) {
+						const more = pickDistractors(q.answer, 1);
+						if (more[0] && !q.choices.includes(more[0])) q.choices.push(more[0]);
+						else break;
+					}
+					q.choices = shuffle(q.choices);
+					qs.push(q);
+				}
+				return qs;
+			}
+
+			let quizOrder = buildQuizQuestions();
+			let quizIndex = 0;
+			let quizScore = 0;
+			let quizStreak = 0;
+			let quizAnswered = false;
+			let quizHintUsed = false;
+
+			if (quizTotalEl) quizTotalEl.textContent = String(quizOrder.length);
+
+			function updateQuizProgress() {
+				if (!quizProgressBar || !quizOrder.length) return;
+				const current = Math.min(quizIndex, quizOrder.length - 1);
+				const percent = ((current) / quizOrder.length) * 100;
+				quizProgressBar.style.width = `${percent}%`;
+				quizProgressBar.setAttribute('aria-valuenow', String(Math.round(percent)));
+			}
+
+			function quizRender() {
+				const q = quizOrder[quizIndex];
+				quizAnswered = false;
+				quizHintUsed = false;
+				if (quizHintBox) quizHintBox.classList.add('d-none');
+				if (quizFeedback) quizFeedback.textContent = '';
+				if (quizCta) quizCta.classList.add('d-none');
+
+				if (quizQIndexEl) quizQIndexEl.textContent = String(quizIndex + 1);
+				if (quizScoreEl) quizScoreEl.textContent = String(quizScore);
+				if (quizStreakEl) quizStreakEl.textContent = String(quizStreak);
+				updateQuizProgress();
+
+				if (quizQuestionTitleEl) quizQuestionTitleEl.textContent = `Câu ${quizIndex + 1}: ${q.title}`;
+				if (quizQuestionTextEl) quizQuestionTextEl.textContent = q.text || 'Hãy chọn đáp án đúng.';
+				if (quizHintText) quizHintText.textContent = q.hint || 'Không có gợi ý thêm.';
+
+				if (quizChoicesEl) {
+					quizChoicesEl.innerHTML = '';
+					(q.choices || []).forEach((c) => {
+						const col = document.createElement('div');
+						col.className = 'col-12 col-md-6';
+						const btn = document.createElement('button');
+						btn.type = 'button';
+						btn.className = 'nv-quiz-choice w-100';
+						btn.textContent = c;
+						btn.addEventListener('click', function () {
+							if (quizAnswered) return;
+							quizAnswered = true;
+							const isCorrect = c === q.answer;
+							if (isCorrect) {
+								quizStreak += 1;
+								const bonus = Math.min(15, quizStreak); // streak bonus nhẹ
+								quizScore += (quizHintUsed ? 8 : (hardMode ? 18 : 12)) + bonus;
+								btn.classList.add('is-correct');
+								beep(880, 80);
+								if (quizFeedback) quizFeedback.innerHTML = `<span class="text-success fw-semibold">Đúng!</span> +${(quizHintUsed ? 8 : (hardMode ? 18 : 12)) + bonus} điểm. <span class="text-muted">(${q.answer})</span>`;
+							} else {
+								quizStreak = 0;
+								quizScore = Math.max(0, quizScore - 3);
+								btn.classList.add('is-wrong');
+								beep(220, 120);
+								if (quizFeedback) quizFeedback.innerHTML = `<span class="text-danger fw-semibold">Sai rồi.</span> Đáp án đúng: <strong>${q.answer}</strong>. (-3 điểm)`;
+								// highlight correct choice
+								quizChoicesEl.querySelectorAll('button').forEach(b => {
+									if (b.textContent === q.answer) b.classList.add('is-correct');
+								});
+							}
+
+							if (quizScoreEl) quizScoreEl.textContent = String(quizScore);
+							if (quizStreakEl) quizStreakEl.textContent = String(quizStreak);
+
+							if (quizCta) {
+								const qStr = q.answer;
+								quizCta.href = q.productId ? `/Product/Details/${q.productId}` : `/Product?q=${encodeURIComponent(qStr)}`;
+								quizCta.classList.remove('d-none');
+							}
+						});
+						col.appendChild(btn);
+						quizChoicesEl.appendChild(col);
+					});
+				}
+			}
+
+			function quizNext() {
+				if (quizIndex < quizOrder.length - 1) {
+					quizIndex += 1;
+					quizRender();
+					return;
+				}
+				// finished
+				if (quizQuestionTitleEl) quizQuestionTitleEl.textContent = 'Hoàn thành Quiz!';
+				if (quizQuestionTextEl) quizQuestionTextEl.textContent = `Tổng điểm của bạn: ${quizScore}. Bạn có thể chơi lại để phá kỷ lục.`;
+				if (quizChoicesEl) quizChoicesEl.innerHTML = '';
+				if (quizHintBox) quizHintBox.classList.add('d-none');
+				if (quizFeedback) quizFeedback.innerHTML = '<span class="text-primary fw-semibold">Tip:</span> Bấm “Reset” để chơi lại với bộ câu hỏi mới.';
+				if (quizCta) quizCta.classList.add('d-none');
+				updateQuizProgress();
+			}
+
+			function quizReset() {
+				quizOrder = buildQuizQuestions();
+				if (quizTotalEl) quizTotalEl.textContent = String(quizOrder.length);
+				quizIndex = 0;
+				quizScore = 0;
+				quizStreak = 0;
+				quizRender();
+			}
+
+			if (quizHintBtn) {
+				quizHintBtn.addEventListener('click', function () {
+					if (quizAnswered) return;
+					if (quizHintUsed) {
+						if (quizHintBox) quizHintBox.classList.toggle('d-none');
+						return;
+					}
+					quizHintUsed = true;
+					quizScore = Math.max(0, quizScore - 5);
+					if (quizScoreEl) quizScoreEl.textContent = String(quizScore);
+					if (quizHintBox) quizHintBox.classList.remove('d-none');
+					beep(520, 60);
+				});
+			}
+			if (quizNextBtn) quizNextBtn.addEventListener('click', quizNext);
+			if (quizResetBtn) quizResetBtn.addEventListener('click', quizReset);
+			quizRender();
+		})();
+	</script>
+}
+

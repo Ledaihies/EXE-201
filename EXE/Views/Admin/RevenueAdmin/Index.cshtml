@@ -1,0 +1,240 @@
+@model IEnumerable<EXE.ViewModels.CommissionDashboardItem>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Doanh thu admin";
+    var totalGrossRevenue = ViewBag.TotalGrossRevenue as decimal? ?? 0m;
+    var totalAdminCommission = ViewBag.TotalAdminCommission as decimal? ?? 0m;
+    var totalAdvertisingRevenue = ViewBag.TotalAdvertisingRevenue as decimal? ?? 0m;
+    var totalWalletTopUpRevenue = ViewBag.TotalWalletTopUpRevenue as decimal? ?? 0m;
+    var totalShippingRefunds = ViewBag.TotalShippingRefunds as decimal? ?? 0m;
+    var totalAdminRevenue = ViewBag.TotalAdminRevenue as decimal? ?? 0m;
+    var totalSellerPayout = ViewBag.TotalSellerPayout as decimal? ?? 0m;
+    var totalQuantitySold = ViewBag.TotalQuantitySold as int? ?? 0;
+    var commissionRate = ViewBag.CommissionRate as decimal? ?? 0.15m;
+    string from = ViewBag.From ?? string.Empty;
+    string to = ViewBag.To ?? string.Empty;
+    string mode = ViewBag.Mode ?? "day";
+    int month = ViewBag.Month ?? DateTime.Today.Month;
+    int year = ViewBag.Year ?? DateTime.Today.Year;
+    var sellerPayoutSummaries = ViewBag.SellerPayoutSummaries as IEnumerable<EXE.ViewModels.CommissionDashboardItem>
+        ?? Enumerable.Empty<EXE.ViewModels.CommissionDashboardItem>();
+}
+
+<style>
+    .rev-shell { max-width: 1320px; }
+    .rev-card { background: #fff; border: 1px solid #d7dee8; border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.06); }
+    .rev-kpi { padding: 18px; min-height: 112px; }
+    .rev-kpi .label { color: #64748b; font-size: .78rem; font-weight: 700; text-transform: uppercase; }
+    .rev-kpi .value { font-size: 1.42rem; font-weight: 800; color: #111827; line-height: 1.2; }
+    .rev-kpi .hint { color: #64748b; font-size: .82rem; }
+    .rev-filter .form-control, .rev-filter .form-select { border-radius: 6px; }
+    .rev-table th { color: #475569; font-size: .78rem; text-transform: uppercase; }
+    .rev-table td, .rev-table th { vertical-align: middle; }
+    .rev-bank { color: #475569; font-size: .82rem; line-height: 1.45; }
+</style>
+
+<div class="container-fluid py-4 rev-shell">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div>
+            <div class="text-primary text-uppercase small fw-semibold">Doanh thu admin</div>
+            <h2 class="mb-1">Tổng quan doanh thu</h2>
+            <p class="text-muted mb-0">Lọc theo ngày, tháng hoặc khoảng ngày. Doanh thu được tách rõ theo hoa hồng đơn hàng, quảng cáo và nạp ví.</p>
+        </div>
+    </div>
+
+    <div class="rev-card rev-filter p-3 mb-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Kiểu lọc</label>
+                <select name="mode" class="form-select">
+                    <option value="day" selected="@(mode == "day")">Theo ngày</option>
+                    <option value="month" selected="@(mode == "month")">Theo tháng</option>
+                    <option value="range" selected="@(mode == "range")">Khoảng ngày</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Từ ngày</label>
+                <input type="date" name="from" value="@from" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Đến ngày</label>
+                <input type="date" name="to" value="@to" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Tháng</label>
+                <input type="number" min="1" max="12" name="month" value="@month" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Năm</label>
+                <input type="number" min="2020" max="2100" name="year" value="@year" class="form-control" />
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-4">Lọc</button>
+                <a href="/RevenueAdmin" class="btn btn-outline-secondary">Hôm nay</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-2">
+            <div class="rev-card rev-kpi">
+                <div class="label">Doanh thu đơn hàng</div>
+                <div class="value">@String.Format("{0:N0}", totalGrossRevenue) đ</div>
+                <div class="hint">@totalQuantitySold sản phẩm đã bán</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <div class="rev-card rev-kpi">
+                <div class="label">Hoa hồng admin</div>
+                <div class="value text-success">@String.Format("{0:N0}", totalAdminCommission) đ</div>
+                <div class="hint">@((commissionRate * 100).ToString("0"))% từ đơn hàng</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <div class="rev-card rev-kpi">
+                <div class="label">Doanh thu quảng cáo</div>
+                <div class="value text-warning">@String.Format("{0:N0}", totalAdvertisingRevenue) đ</div>
+                <div class="hint">Gói quảng cáo đã thanh toán</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <div class="rev-card rev-kpi">
+                <div class="label">Tiền nạp ví</div>
+                <div class="value text-info">@String.Format("{0:N0}", totalWalletTopUpRevenue) đ</div>
+                <div class="hint">Người dùng nạp qua QR admin</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <div class="rev-card rev-kpi">
+                <div class="label">Tổng thu admin</div>
+                <div class="value text-primary">@String.Format("{0:N0}", totalAdminRevenue) đ</div>
+                <div class="hint">Đã trừ @String.Format("{0:N0}", totalShippingRefunds) đ hoàn ship</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <div class="rev-card rev-kpi">
+                <div class="label">Trả người bán</div>
+                <div class="value">@String.Format("{0:N0}", totalSellerPayout) đ</div>
+                <div class="hint">85% sản phẩm + hoàn ship</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rev-card table-responsive mb-4">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h3 class="h5 mb-1">Thanh toan cho nguoi ban</h3>
+                <div class="text-muted small">Dung bang nay de chuyen tien theo tung nguoi ban trong bo loc hien tai.</div>
+            </div>
+        </div>
+        <table class="table mb-0 align-middle rev-table">
+            <thead class="table-light">
+                <tr>
+                    <th>NgÆ°á»i bĂ¡n</th>
+                    <th>Tai khoan nhan tien</th>
+                    <th class="text-end">Tien hang 85%</th>
+                    <th class="text-end">Hoan ship</th>
+                    <th class="text-end">Can chuyen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!sellerPayoutSummaries.Any())
+                {
+                    <tr><td colspan="5" class="text-center py-4 text-muted">Khong co nguoi ban can thanh toan trong bo loc nay.</td></tr>
+                }
+                else
+                {
+                    foreach (var seller in sellerPayoutSummaries)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@seller.SellerName</div>
+                                @if (seller.SellerId.HasValue)
+                                {
+                                    <div class="small text-muted">Nguoi ban #@seller.SellerId</div>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(seller.SellerBankName) || !string.IsNullOrWhiteSpace(seller.SellerBankAccountNumber) || !string.IsNullOrWhiteSpace(seller.SellerBankAccountName))
+                                {
+                                    <div class="rev-bank">
+                                        <div><span class="fw-semibold">NH:</span> @seller.SellerBankName</div>
+                                        <div><span class="fw-semibold">STK:</span> @seller.SellerBankAccountNumber</div>
+                                        <div><span class="fw-semibold">Chu TK:</span> @seller.SellerBankAccountName</div>
+                                        @if (!string.IsNullOrWhiteSpace(seller.SellerBankBranch))
+                                        {
+                                            <div><span class="fw-semibold">Ghi chu:</span> @seller.SellerBankBranch</div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="small text-danger">Chua co tai khoan ngan hang</div>
+                                }
+                            </td>
+                            <td class="text-end fw-semibold">@String.Format("{0:N0}", seller.SellerPayout - seller.ShippingRefundAmount) Ä‘</td>
+                            <td class="text-end">@String.Format("{0:N0}", seller.ShippingRefundAmount) Ä‘</td>
+                            <td class="text-end text-primary fw-bold">@String.Format("{0:N0}", seller.SellerPayout) Ä‘</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="rev-card table-responsive">
+        <table class="table mb-0 align-middle rev-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th>Người bán</th>
+                    <th>Tai khoan nhan tien</th>
+                    <th class="text-center">SL bán</th>
+                    <th class="text-center">Đơn</th>
+                    <th class="text-end">Doanh thu sản phẩm</th>
+                    <th class="text-end">Hoa hồng 15%</th>
+                    <th class="text-end">Người bán nhận</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" class="text-center py-4 text-muted">Không có dữ liệu trong bộ lọc này.</td></tr>
+                }
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><div class="fw-semibold">@item.ProductName</div><div class="small text-muted">#@item.ProductId</div></td>
+                            <td><div>@item.SellerName</div>@if (item.SellerId.HasValue) { <div class="small text-muted">Người bán #@item.SellerId</div> }</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.SellerBankName) || !string.IsNullOrWhiteSpace(item.SellerBankAccountNumber) || !string.IsNullOrWhiteSpace(item.SellerBankAccountName))
+                                {
+                                    <div class="rev-bank">
+                                        <div><span class="fw-semibold">NH:</span> @item.SellerBankName</div>
+                                        <div><span class="fw-semibold">STK:</span> @item.SellerBankAccountNumber</div>
+                                        <div><span class="fw-semibold">Chu TK:</span> @item.SellerBankAccountName</div>
+                                        @if (!string.IsNullOrWhiteSpace(item.SellerBankBranch))
+                                        {
+                                            <div><span class="fw-semibold">Ghi chu:</span> @item.SellerBankBranch</div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="small text-danger">Chua co tai khoan ngan hang</div>
+                                }
+                            </td>
+                            <td class="text-center">@item.QuantitySold</td>
+                            <td class="text-center">@item.PaidOrderCount</td>
+                            <td class="text-end fw-semibold">@String.Format("{0:N0}", item.GrossRevenue) đ</td>
+                            <td class="text-end text-success fw-semibold">@String.Format("{0:N0}", item.AdminCommission) đ</td>
+                            <td class="text-end text-primary fw-semibold">@String.Format("{0:N0}", item.SellerPayout) đ</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

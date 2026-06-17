@@ -1,0 +1,1647 @@
+@model EXE.ViewModels.HomeIndexViewModel
+
+@{
+	var todayKey = DateTime.UtcNow.ToString("yyyy-MM-dd");
+	var isLoggedIn = Context.Session.GetInt32("UserId") != null;
+}
+
+<style>
+	.nv-entry-banner {
+		position: fixed;
+		inset: 0;
+		z-index: 2000;
+		display: none;
+	}
+
+	.nv-entry-banner.is-open {
+		display: block;
+	}
+
+	.nv-entry-banner__backdrop {
+		position: absolute;
+		inset: 0;
+		background: rgba(2, 6, 23, .62);
+		backdrop-filter: blur(2px);
+	}
+
+	.nv-entry-banner__dialog {
+		position: relative;
+		z-index: 1;
+		width: min(820px, calc(100vw - 28px));
+		max-width: 820px;
+		margin: 8vh auto;
+		padding: 0;
+	}
+
+	.nv-entry-banner__card {
+		background: #fff;
+		border-radius: 18px;
+		box-shadow: 0 30px 90px rgba(0, 0, 0, .35);
+		overflow: hidden;
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.nv-entry-banner__header {
+		flex: 0 0 auto;
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 14px 16px 10px 16px;
+		border-bottom: 1px solid rgba(148, 163, 184, .28);
+		background: #fff;
+	}
+
+	.nv-entry-banner__title {
+		margin: 0;
+		font-weight: 800;
+		line-height: 1.2;
+	}
+
+	.nv-entry-banner__subtitle {
+		margin: 6px 0 0 0;
+		color: #64748b;
+		font-size: .9rem;
+	}
+
+	.nv-entry-banner__close {
+		border: 0;
+		background: transparent;
+		width: 40px;
+		height: 40px;
+		border-radius: 999px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: #0f172a;
+	}
+
+	.nv-entry-banner__close:hover {
+		background: rgba(15, 23, 42, .06);
+	}
+
+	.nv-entry-banner__body {
+		flex: 1 1 auto;
+		min-height: 0;
+		padding: 12px 16px 14px 16px;
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+
+	.nv-entry-banner__section-label {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		margin: 8px 0 10px 0;
+	}
+
+	.nv-entry-banner__products {
+		max-height: min(46vh, 390px);
+		overflow-x: hidden;
+		overflow-y: auto;
+		padding-right: 4px;
+	}
+
+	.nv-entry-banner__grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 10px;
+	}
+
+	@@media (min-width: 576px) {
+		.nv-entry-banner__grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@@media (min-width: 992px) {
+		.nv-entry-banner__grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	.nv-entry-banner__item {
+		border: 1px solid rgba(148, 163, 184, .45);
+		border-radius: 14px;
+		overflow: hidden;
+		background: #fff;
+	}
+
+	.nv-entry-banner__item a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.nv-entry-banner__thumb {
+		height: 96px;
+		background: #f1f5f9;
+	}
+
+	.nv-entry-banner__thumb img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.nv-entry-banner__item-body {
+		padding: 8px 10px 10px 10px;
+	}
+
+	.nv-entry-banner__name {
+		font-weight: 700;
+		font-size: .9rem;
+		margin: 0 0 6px 0;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		min-height: 2.4em;
+	}
+
+	.nv-entry-banner__price {
+		margin: 0;
+		color: #0d6efd;
+		font-weight: 800;
+		font-size: .92rem;
+	}
+
+	.nv-entry-banner__pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		margin: 12px 0 6px 0;
+	}
+
+	.nv-entry-banner__page-status {
+		min-width: 82px;
+		text-align: center;
+		font-size: .9rem;
+		font-weight: 700;
+		color: #334155;
+	}
+
+	.nv-entry-banner__voucher {
+		border: 1px dashed rgba(234, 88, 12, .55);
+		background: rgba(255, 237, 213, .55);
+	}
+
+	.nv-entry-banner__voucher .nv-entry-banner__item-body {
+		padding: 12px;
+	}
+
+	.nv-entry-banner__voucher-code {
+		font-weight: 900;
+		letter-spacing: .08em;
+	}
+
+	.nv-entry-banner__footer {
+		flex: 0 0 auto;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 12px;
+		padding: 10px 16px 14px 16px;
+		border-top: 1px solid rgba(148, 163, 184, .35);
+		background: #fff;
+	}
+
+	.nv-entry-banner__hint {
+		color: #64748b;
+		font-size: .9rem;
+		margin: 0;
+	}
+
+	@@media (max-width: 575.98px) {
+		.nv-entry-banner__dialog {
+			width: min(380px, calc(100vw - 20px));
+			margin: 4vh auto;
+		}
+
+		.nv-entry-banner__card {
+			max-height: 80vh;
+			border-radius: 14px;
+		}
+
+		.nv-entry-banner__header {
+			padding: 12px 12px 8px 12px;
+		}
+
+		.nv-entry-banner__title {
+			font-size: 1.05rem;
+		}
+
+		.nv-entry-banner__subtitle {
+			font-size: .82rem;
+		}
+
+		.nv-entry-banner__body {
+			padding: 10px 12px 12px 12px;
+		}
+
+		.nv-entry-banner__products {
+			max-height: 48vh;
+		}
+
+		.nv-entry-banner__thumb {
+			height: 104px;
+		}
+
+		.nv-entry-banner__footer {
+			padding: 10px 12px 12px 12px;
+		}
+	}
+</style>
+
+<!-- Entry banner (sản phẩm nổi bật hôm nay + voucher) -->
+<div class="nv-entry-banner" id="nvEntryBanner" aria-hidden="true">
+	<div class="nv-entry-banner__backdrop" data-entry-banner-close="backdrop"></div>
+	<div class="nv-entry-banner__dialog" role="dialog" aria-modal="true" aria-label="Banner hôm nay">
+		<div class="nv-entry-banner__card">
+			<div class="nv-entry-banner__header">
+				<div>
+					<h3 class="nv-entry-banner__title">Sản phẩm đang được bán chạy</h3>
+					<p class="nv-entry-banner__subtitle">Những sản phẩm nổi bật được nhiều khách hàng quan tâm. Đóng để xem trang chủ.</p>
+				</div>
+				<button type="button" class="nv-entry-banner__close" aria-label="Đóng" id="nvEntryBannerCloseBtn">
+					<i class="fa fa-times"></i>
+				</button>
+			</div>
+
+			<div class="nv-entry-banner__body">
+				<div class="nv-entry-banner__section-label">
+					<strong>Sản phẩm bán chạy hôm nay</strong>
+					<a class="btn btn-sm btn-outline-primary rounded-pill px-3" href="/Product?sort=newest">Xem thêm</a>
+				</div>
+
+				<div class="nv-entry-banner__products">
+					<div class="nv-entry-banner__grid" id="nvEntryBannerProductGrid">
+					@foreach (var p in (Model.AdvertisedProducts ?? Enumerable.Empty<EXE.Models.Product>()).Take(10))
+					{
+						var img = p.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+						<div class="nv-entry-banner__item nv-entry-banner__product-item">
+							<a href="/Product/Details/@p.ProductId">
+								<div class="nv-entry-banner__thumb">
+									<img src="~/img/@img" alt="@p.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+								</div>
+								<div class="nv-entry-banner__item-body">
+									<p class="nv-entry-banner__name">@p.ProductName</p>
+									<p class="nv-entry-banner__price">@String.Format("{0:N0}", p.Price ?? 0) đ</p>
+								</div>
+							</a>
+						</div>
+					}
+					</div>
+				</div>
+
+				<div class="nv-entry-banner__pagination" id="nvEntryBannerPagination">
+					<button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="nvEntryBannerPrevBtn">Tr&#432;&#7899;c</button>
+					<span class="nv-entry-banner__page-status" id="nvEntryBannerPageStatus">1 / 1</span>
+					<button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="nvEntryBannerNextBtn">Sau</button>
+				</div>
+
+				@if (Model.ActiveVouchers != null && Model.ActiveVouchers.Any())
+				{
+					<div class="nv-entry-banner__section-label">
+						<strong>Voucher</strong>
+						<a class="btn btn-sm btn-outline-warning rounded-pill px-3" href="#voucherSection" onclick="document.getElementById('voucherSection')?.scrollIntoView({behavior:'smooth'}); return false;">Xem ở trang</a>
+					</div>
+					<div class="nv-entry-banner__grid">
+						@foreach (var v in Model.ActiveVouchers.Take(3))
+						{
+							var isPercent = (v.DiscountPercent ?? 0) > 0;
+							var discountText = v.IsFreeShipping ? "Free ship" : isPercent
+								? $"{v.DiscountPercent}%"
+								: (v.DiscountFixed.HasValue ? String.Format("{0:N0} đ", v.DiscountFixed.Value) : "Ưu đãi");
+							var minOrderText = v.MinOrderAmount.HasValue ? $"ĐH từ {v.MinOrderAmount.Value.ToString("N0")} đ" : "Không tối thiểu";
+							<div class="nv-entry-banner__item nv-entry-banner__voucher">
+								<div class="nv-entry-banner__item-body">
+									<div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+										<span class="badge bg-dark text-warning">@discountText OFF</span>
+										<button type="button"
+												class="btn btn-sm btn-outline-primary rounded-pill px-3"
+												onclick="handleCopyVoucher('@v.Code', @(isLoggedIn ? "true" : "false"))">
+											Sao chép
+										</button>
+									</div>
+									<div class="nv-entry-banner__voucher-code">@v.Code</div>
+									<div class="small text-muted mt-1">@minOrderText</div>
+									@if (!string.IsNullOrWhiteSpace(v.Description))
+									{
+										<div class="small mt-2">@v.Description</div>
+									}
+								</div>
+							</div>
+						}
+					</div>
+				}
+			</div>
+
+			<div class="nv-entry-banner__footer">
+				<button type="button" class="btn btn-primary rounded-pill px-4" id="nvEntryBannerGoHomeBtn">
+					Xem trang chủ
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Hôm nay Nguồn Việt có gì mới - thanh sản phẩm 1 hàng, trượt ngang bằng mũi tên -->
+<div class="container-fluid py-4 border-bottom nv-featured-strip">
+	<div class="container-fluid px-3 px-md-4 position-relative">
+		<h5 class="text-primary mb-3 text-center">Sản phẩm nổi bật của chúng tôi</h5>
+
+		<button type="button"
+				class="nv-featured-strip-arrow nv-featured-strip-arrow--prev"
+				aria-label="Xem sản phẩm trước">
+			<i class="fa fa-angle-left"></i>
+		</button>
+
+		<button type="button"
+				class="nv-featured-strip-arrow nv-featured-strip-arrow--next"
+				aria-label="Xem sản phẩm tiếp theo">
+			<i class="fa fa-angle-right"></i>
+		</button>
+
+		<div class="nv-featured-strip-viewport" id="featuredProductsViewport">
+			<div class="nv-featured-strip-track" id="featuredProductsTrack">
+				@foreach (var item in (Model.AdvertisedProducts ?? Enumerable.Empty<EXE.Models.Product>()).Take(10))
+				{
+					var image = item.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+					<div class="nv-featured-strip-item">
+						<div class="card border-0 h-100 shadow-sm rounded-3 overflow-hidden nv-featured-strip-card">
+							<a href="/Product/Details/@item.ProductId" class="text-decoration-none text-dark">
+								<div class="position-relative nv-featured-strip-img">
+									<img src="~/img/@image" class="card-img-top img-fluid" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+								</div>
+								<div class="card-body py-2 px-3">
+									<h6 class="card-title mb-1 text-truncate nv-featured-strip-title">@item.ProductName</h6>
+									<p class="text-primary fw-bold mb-2 small">@String.Format("{0:N0}", item.Price) đ</p>
+								</div>
+							</a>
+							<div class="card-footer border-0 bg-transparent pt-0 px-3 pb-3 d-flex gap-2">
+								<a href="/Cart/Add/@item.ProductId" class="btn btn-primary btn-sm rounded-pill px-3 flex-grow-1" title="Thêm vào giỏ">
+									<i class="fa fa-cart-plus me-1"></i> Thêm giỏ
+								</a>
+								<a href="/Product/Details/@item.ProductId" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Xem chi tiết">
+									<i class="fa fa-eye me-1"></i> Xem
+								</a>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+		<div class="nv-featured-strip-dots" id="featuredProductsDots" aria-label="Chọn nhóm sản phẩm"></div>
+	</div>
+</div>
+
+<!-- Hero Start -->
+<div class="container-fluid py-5 mb-5 hero-header">
+
+	<div class="container py-5">
+		@if (TempData["OrderSuccess"] != null)
+		{
+			<div class="alert alert-success alert-dismissible fade show" role="alert">
+				<i class="fas fa-check-circle me-2"></i>@TempData["OrderSuccess"]
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+			</div>
+		}
+		@if (TempData["ReferralReward"] != null)
+		{
+			<div class="alert alert-info alert-dismissible fade show" role="alert">
+				<i class="fas fa-gift me-2"></i>@TempData["ReferralReward"]
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+			</div>
+		}
+		@if (TempData["PaymentMessage"] != null)
+		{
+			<div class="alert alert-info alert-dismissible fade show" role="alert">
+				@TempData["PaymentMessage"]
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+			</div>
+		}
+
+		<div class="row g-5 align-items-center">
+
+			<div class="col-md-12 col-lg-7">
+
+				<h4 class="mb-3 text-secondary text-uppercase" style="letter-spacing:.12em;">Tinh hoa đặc sản Việt</h4>
+
+				<h1 class="mb-4 display-3 text-primary">
+					Nguồn Việt – Đặc sản vùng miền
+				</h1>
+
+				<p class="text-muted mb-4">
+					Gửi trọn hương vị quê nhà qua những món quà đậm chất vùng miền – từ trà, cà phê, mắm, bánh đến các loại khô
+					được chọn lọc kỹ lưỡng từ những nhà sản xuất địa phương uy tín trên khắp Việt Nam.
+				</p>
+
+				<form class="hero-search" method="get" action="/Product">
+					<div class="input-group input-group-lg">
+						<input class="form-control border-2 border-secondary rounded-pill ps-4 pe-5"
+							   type="search"
+							   name="q"
+							   placeholder="Tìm đặc sản theo tên, vùng miền hoặc địa phương...">
+						<button type="submit"
+								class="btn btn-primary border-2 border-secondary rounded-pill px-4 hero-search-btn">
+							Tìm
+						</button>
+					</div>
+				</form>
+
+			</div>
+
+
+			<div class="col-md-12 col-lg-5">
+
+				<div id="carouselId"
+					 class="carousel slide position-relative"
+					 data-bs-ride="carousel">
+
+					<div class="carousel-inner"
+						 role="listbox">
+
+						<div class="carousel-item active rounded overflow-hidden">
+
+							<img src="~/img/hero-img-3.jpg"
+								 class="img-fluid w-100 bg-secondary rounded-4 object-fit-cover"
+								 alt="Đặc sản quà biếu">
+
+							<div class="position-absolute bottom-0 start-0 end-0 p-3 p-md-4">
+								<a href="/Product"
+								   class="btn btn-warning fw-semibold px-4 py-2 rounded-pill shadow-sm">
+									Đặc sản quà biếu
+								</a>
+							</div>
+
+						</div>
+
+
+						<div class="carousel-item rounded overflow-hidden">
+
+							<img src="~/img/hero-img-1.jpg"
+								 class="img-fluid w-100 rounded-4 object-fit-cover"
+								 alt="Đặc sản bếp nhà">
+
+							<div class="position-absolute bottom-0 start-0 end-0 p-3 p-md-4">
+								<a href="/Product"
+								   class="btn btn-success fw-semibold px-4 py-2 rounded-pill shadow-sm">
+									Đặc sản bếp nhà
+								</a>
+							</div>
+
+						</div>
+
+					</div>
+
+
+					<button class="carousel-control-prev"
+							type="button"
+							data-bs-target="#carouselId"
+							data-bs-slide="prev">
+
+						<span class="carousel-control-prev-icon"></span>
+
+					</button>
+
+
+					<button class="carousel-control-next"
+							type="button"
+							data-bs-target="#carouselId"
+							data-bs-slide="next">
+
+						<span class="carousel-control-next-icon"></span>
+
+					</button>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</div>
+<!-- Hero End -->
+
+
+@if (Model.JourneySummary != null)
+{
+	var j = Model.JourneySummary;
+	<section class="py-3 py-md-4">
+		<div class="container">
+			<div class="card border-0 shadow-sm rounded-4 home-journey-card">
+				<div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+					<div>
+						<div class="d-flex align-items-center gap-2 mb-1">
+							<h6 class="mb-0">Tiến độ hành trình 3 miền</h6>
+							@if (!string.IsNullOrWhiteSpace(j.JourneyLevelName))
+							{
+								<span class="badge bg-success-subtle text-success border border-success-subtle small">
+									@j.JourneyLevelName
+								</span>
+							}
+						</div>
+						<p class="text-muted small mb-2">Khám phá đặc sản Bắc – Trung – Nam để nhận huy hiệu "Trọn vẹn 3 miền".</p>
+						<div class="d-flex flex-wrap gap-2 align-items-center">
+							<span class="journey-region-pill @(j.HasNorth ? "journey-region-done" : "journey-region-todo")">
+								<i class="bi @(j.HasNorth ? "bi-check-circle-fill" : "bi-geo-alt") me-1"></i> Miền Bắc
+							</span>
+							<span class="journey-region-pill @(j.HasCentral ? "journey-region-done" : "journey-region-todo")">
+								<i class="bi @(j.HasCentral ? "bi-check-circle-fill" : "bi-geo-alt") me-1"></i> Miền Trung
+							</span>
+							<span class="journey-region-pill @(j.HasSouth ? "journey-region-done" : "journey-region-todo")">
+								<i class="bi @(j.HasSouth ? "bi-check-circle-fill" : "bi-geo-alt") me-1"></i> Miền Nam
+							</span>
+							<span class="ms-2 text-muted small">@((j.HasNorth ? 1 : 0) + (j.HasCentral ? 1 : 0) + (j.HasSouth ? 1 : 0))/3 miền</span>
+						</div>
+					</div>
+					<div class="text-md-end">
+						@if (j.NextGoals?.Any() ?? false)
+						{
+							<div class="journey-next-goals small mb-2">
+								<strong class="d-block mb-1 text-secondary">Mục tiêu tiếp theo</strong>
+								<ul class="list-unstyled mb-0">
+									@foreach (var goal in j.NextGoals)
+									{
+										<li class="mb-1"><i class="bi bi-arrow-right-circle text-primary me-1"></i>@goal</li>
+									}
+								</ul>
+							</div>
+						}
+						<a href="/Journey" class="btn btn-outline-success btn-sm rounded-pill px-3">
+							Xem hành trình
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+}
+
+
+@if (Model.ActiveVouchers != null && Model.ActiveVouchers.Any())
+{
+	<!-- Banner voucher dịp khuyến mãi -->
+	<section class="py-4 py-md-5" style="background: #f97316;" id="voucherSection">
+		<div class="container">
+			<div class="text-center mb-4">
+				<span class="text-light text-uppercase small fw-semibold" style="letter-spacing:.16em;">
+					Voucher ưu đãi đang diễn ra
+				</span>
+				<h2 class="h3 fw-bold text-white mt-2 mb-1">
+					Săn quà tặng & mã giảm giá cho từng dịp đặc biệt
+				</h2>
+				<p class="text-light mb-0" style="opacity:.9;">
+					Chọn voucher phù hợp với dịp mua sắm của bạn – nhập mã ở bước thanh toán để được áp dụng ưu đãi.
+				</p>
+			</div>
+
+			<div class="row g-3 g-md-4">
+				@foreach (var v in Model.ActiveVouchers)
+				{
+					var isPercent = (v.DiscountPercent ?? 0) > 0;
+					var discountText = v.IsFreeShipping ? "Free ship" : isPercent
+						? $"{v.DiscountPercent}%"
+						: (v.DiscountFixed.HasValue ? String.Format("{0:N0} đ", v.DiscountFixed.Value) : "Ưu đãi");
+					var minOrderText = v.MinOrderAmount.HasValue ? $"ĐH từ {v.MinOrderAmount.Value.ToString("N0")} đ" : "Không yêu cầu tối thiểu";
+					var expiryText = v.ExpiryDate.HasValue ? $"Đến {v.ExpiryDate.Value:dd/MM/yyyy}" : "Không giới hạn thời gian";
+					var tag = string.IsNullOrWhiteSpace(v.OccasionTag) ? "Ưu đãi chung" : v.OccasionTag;
+				<div class="col-md-6 col-lg-3">
+					<div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+						<div class="card-body d-flex flex-column p-3 p-md-4">
+							<div class="d-flex justify-content-between align-items-start mb-2">
+								<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle small">
+									@tag
+								</span>
+								<span class="badge rounded-pill bg-dark text-warning small">
+									@discountText OFF
+								</span>
+							</div>
+							<h5 class="card-title mb-2 text-dark">
+								Mã: @v.Code
+							</h5>
+							@if (!string.IsNullOrWhiteSpace(v.Description))
+							{
+								<p class="text-muted small mb-2">@v.Description</p>
+							}
+							<p class="small mb-1">
+								<strong>Đơn tối thiểu:</strong> @minOrderText
+							</p>
+							<p class="small mb-3">
+								<strong>Thời gian:</strong> @expiryText
+							</p>
+							<div class="mt-auto d-flex justify-content-between align-items-center gap-2">
+								<small class="text-light-emphasis">
+									Sao chép mã và dùng ở bước thanh toán.
+								</small>
+								<button type="button"
+										class="btn btn-sm btn-outline-primary rounded-pill px-3"
+										onclick="handleCopyVoucher('@v.Code', @(isLoggedIn ? "true" : "false"))">
+									Sao chép
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				}
+			</div>
+		</div>
+	</section>
+}
+
+<!-- Feature / Lý do chọn Nguồn Việt -->
+<section class="nv-reasons-section py-5">
+	<div class="container py-4 py-md-5">
+		<div class="text-center mb-4">
+			<span class="text-secondary text-uppercase small fw-semibold" style="letter-spacing:.16em;">
+				Vì sao chọn Nguồn Việt
+			</span>
+			<h2 class="h3 fw-bold text-dark mt-2 mb-2">Yên tâm khi mua đặc sản online</h2>
+			<p class="text-muted mb-0">
+				Kết nối trực tiếp với nhà sản xuất địa phương, giao hàng toàn quốc với chính sách rõ ràng và minh bạch.
+			</p>
+		</div>
+
+		<div class="row g-4">
+			<div class="col-md-6 col-lg-3">
+				<div class="nv-reason-card h-100 text-center">
+					<div class="nv-reason-icon-wrap mb-3">
+						<i class="fas fa-car-side"></i>
+					</div>
+					<h5 class="mb-2">Giao nhanh & tiết kiệm</h5>
+					<p class="small text-muted mb-0">
+						Miễn phí hoặc trợ giá vận chuyển cho đơn đủ điều kiện, đóng gói kỹ và cập nhật hành trình giao hàng rõ ràng.
+					</p>
+				</div>
+			</div>
+
+			<div class="col-md-6 col-lg-3">
+				<div class="nv-reason-card h-100 text-center">
+					<div class="nv-reason-icon-wrap mb-3">
+						<i class="fas fa-user-shield"></i>
+					</div>
+					<h5 class="mb-2">Thanh toán an toàn</h5>
+					<p class="small text-muted mb-0">
+						Hỗ trợ nhiều phương thức thanh toán, mã hóa thông tin và chỉ làm việc với đối tác uy tín để bảo vệ dữ liệu của bạn.
+					</p>
+				</div>
+			</div>
+
+			<div class="col-md-6 col-lg-3">
+				<div class="nv-reason-card h-100 text-center">
+					<div class="nv-reason-icon-wrap mb-3">
+						<i class="fas fa-undo-alt"></i>
+					</div>
+					<h5 class="mb-2">Đổi trả linh hoạt</h5>
+					<p class="small text-muted mb-0">
+						Hỗ trợ đổi trả khi sản phẩm hư hỏng, hết hạn hoặc không đúng mô tả; luôn ưu tiên quyền lợi khách hàng.
+					</p>
+				</div>
+			</div>
+
+			<div class="col-md-6 col-lg-3">
+				<div class="nv-reason-card h-100 text-center">
+					<div class="nv-reason-icon-wrap mb-3">
+						<i class="fas fa-headset"></i>
+					</div>
+					<h5 class="mb-2">Đồng hành trong từng đơn</h5>
+					<p class="small text-muted mb-0">
+						Đội ngũ hỗ trợ thân thiện, hiểu về đặc sản vùng miền, sẵn sàng gợi ý combo quà tặng và theo sát đơn hàng của bạn.
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+
+<!-- Category -->
+<div class="container-fluid py-5">
+
+	<div class="container">
+
+		<div class="text-center mb-5">
+			<h1>Danh mục đặc sản</h1>
+			<p class="text-muted mb-0">
+				Khám phá đặc sản theo từng vùng miền Việt Nam hoặc xem nhanh những sản phẩm nổi bật đang được khách hàng tin chọn.
+			</p>
+		</div>
+
+		<div class="row g-4">
+
+			<div class="col-lg-3 col-sm-6">
+				<a href="/Product?q=Mi%E1%BB%81n%20B%E1%BA%AFc" class="text-decoration-none">
+					<div class="nv-region-card border-0 rounded-4 p-4 text-center h-100 shadow-sm">
+						<h4 class="mb-2">Miền Bắc</h4>
+						<p class="mb-0 text-muted small">Trà sen, cốm, chả cá, món ngon Hà Nội và vùng lân cận.</p>
+					</div>
+				</a>
+			</div>
+
+			<div class="col-lg-3 col-sm-6">
+				<a href="/Product?q=Mi%E1%BB%81n%20Trung" class="text-decoration-none">
+					<div class="nv-region-card border-0 rounded-4 p-4 text-center h-100 shadow-sm">
+						<h4 class="mb-2">Miền Trung</h4>
+						<p class="mb-0 text-muted small">Mắm ruốc, mè xửng, bánh bột lọc, hương vị đậm đà.</p>
+					</div>
+				</a>
+			</div>
+
+			<div class="col-lg-3 col-sm-6">
+				<a href="/Product?q=Mi%E1%BB%81n%20Nam" class="text-decoration-none">
+					<div class="nv-region-card border-0 rounded-4 p-4 text-center h-100 shadow-sm">
+						<h4 class="mb-2">Miền Nam</h4>
+						<p class="mb-0 text-muted small">Trái cây, bánh pía, khô cá, quà miền Tây trù phú.</p>
+					</div>
+				</a>
+			</div>
+
+			<div class="col-lg-3 col-sm-6">
+				<a href="/Product?sort=newest" class="text-decoration-none">
+					<div class="nv-region-card border-0 rounded-4 p-4 text-center h-100 shadow-sm">
+						<h4 class="mb-2">Đặc sản nổi bật</h4>
+						<p class="mb-0 text-muted small">Sản phẩm mới lên kệ, được nhiều khách chọn mua.</p>
+					</div>
+				</a>
+			</div>
+
+		</div>
+
+	</div>
+
+</div>
+
+@* Gợi ý theo dịp đã được gỡ bỏ để đơn giản hóa, không phụ thuộc bảng Occasions *@
+
+<!-- Bản đồ + Gợi ý theo vị trí (phiên bản mới, bản đồ nổi bật hơn) -->
+<div class="container-fluid py-5 nv-map-section">
+	<div class="container">
+		<div class="d-flex flex-column flex-md-row justify-content-between align-items-start mb-4 gap-2">
+			<div>
+				<span class="text-secondary text-uppercase small fw-semibold nv-map-label">
+					Bản đồ đặc sản theo vị trí
+				</span>
+				<h2 class="h3 h-md-2 fw-bold text-dark mb-1">
+					Khám phá đặc sản trên bản đồ Việt Nam
+				</h2>
+				<p class="text-muted small mb-0">
+					Cho phép định vị hoặc chọn điểm bất kỳ trên bản đồ để xem ngay đặc sản nổi bật quanh vị trí đó.
+				</p>
+			</div>
+			<div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+				<button class="btn btn-primary rounded-pill px-3 px-md-4" type="button" id="btnLocate">
+					<i class="fas fa-location-arrow me-2"></i>Định vị vị trí của tôi
+				</button>
+			</div>
+		</div>
+
+		<div class="card nv-map-shell border-0 shadow-lg rounded-4 overflow-hidden">
+			<div class="row g-0">
+				<!-- Cột bản đồ: 1/3 -->
+				<div class="col-lg-4 nv-map-column">
+					<div class="nv-map-wrap position-relative h-100">
+						<div id="map"
+							 class="nv-map border-0"
+							 style="width:100%; min-width:100%; height:540px; min-height:540px; overflow:hidden; background:#e8f4f8;">
+						</div>
+
+						<!-- Thanh thông tin nổi phía trên bản đồ -->
+						<div class="position-absolute top-0 start-0 p-3 w-100" style="pointer-events:none;">
+							<div class="d-inline-flex align-items-center gap-2 bg-white bg-opacity-85 border rounded-pill px-3 py-2 shadow-sm small"
+								 style="pointer-events:auto;">
+								<i class="fas fa-info-circle text-primary"></i>
+								<span id="locationStatus">
+									Vị trí mặc định: Hà Nội. Bấm "Định vị" hoặc chọn điểm trên bản đồ để xem gợi ý.
+								</span>
+							</div>
+						</div>
+
+						<!-- Vùng hiển thị thông tin debug (giữ nguyên id để JS có thể dùng) -->
+						<div class="position-absolute bottom-0 start-0 p-2">
+							<span id="locationDebug"
+								  class="badge bg-dark bg-opacity-75 text-light small d-none d-md-inline-block">
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Cột gợi ý theo vùng: 2/3 -->
+				<div class="col-lg-8 border-start nv-products-column">
+					<div class="d-flex flex-column">
+						<div class="px-3 px-md-4 pt-3 pt-md-4 pb-2 border-bottom">
+							<h5 class="mb-1 fw-semibold">Đặc sản quanh vị trí của bạn</h5>
+							<p class="text-muted small mb-0">
+								Danh sách sẽ tự cập nhật mỗi khi bạn thay đổi vị trí trên bản đồ.
+							</p>
+						</div>
+						<div id="regionSuggestions" class="nv-region-suggestions flex-grow-1 p-3 p-md-4">
+							@{
+								ViewBag.Location = Model.DefaultRegionLabel;
+							}
+							@await Html.PartialAsync("_RegionSuggestions", Model.DefaultRegionProducts ?? Enumerable.Empty<EXE.Models.Product>())
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- Kết thúc khu vực Bản đồ + Gợi ý vị trí -->
+
+
+<!-- Sản phẩm nổi bật - Bố cục grid -->
+<div class="container-fluid py-5 nv-featured-section">
+	<div class="container py-4">
+		<div class="text-center mb-5">
+			<span class="text-secondary text-uppercase small fw-semibold nv-featured-label">Sản phẩm quảng cáo</span>
+			<h2 class="display-5 fw-bold text-primary mt-2 mb-2">Sản phẩm nổi bật</h2>
+			<p class="text-muted mb-0 mx-auto" style="max-width: 480px;">Những món đặc sản vùng miền được khách hàng yêu thích</p>
+		</div>
+
+		<div class="row g-4 justify-content-center nv-featured-products-grid" id="featuredGridProducts">
+			@{
+				var featuredIndex = 0;
+			}
+			@foreach (var item in (Model.AdvertisedProducts ?? Enumerable.Empty<EXE.Models.Product>()))
+			{
+				var image = item.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+				var regionName = item.Region?.RegionName ?? item.Region?.Province ?? "Đặc sản";
+
+				<div class="col-12 col-sm-6 col-lg-4 nv-featured-product-item" data-featured-grid-item data-featured-index="@featuredIndex">
+					<div class="card nv-featured-card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
+						<a href="/Product/Details/@item.ProductId" class="text-decoration-none text-dark d-block">
+							<div class="position-relative nv-featured-card-img-wrap">
+								<img src="~/img/@image" class="card-img-top" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+								<span class="badge nv-featured-region-badge">@regionName</span>
+							</div>
+						</a>
+						<div class="card-body p-3 d-flex flex-column">
+							<a href="/Product/Details/@item.ProductId" class="text-decoration-none text-dark">
+								<h6 class="card-title mb-1 nv-featured-title">@item.ProductName</h6>
+								<p class="card-text text-muted small mb-2 nv-featured-desc">@item.Description</p>
+							</a>
+							<p class="text-primary fw-bold mb-3 mt-auto">@String.Format("{0:N0}", item.Price ?? 0) đ</p>
+							<div class="d-flex gap-2 flex-wrap">
+								<a href="/Product/Details/@item.ProductId" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Xem chi tiết">
+									<i class="fa fa-eye me-1"></i> Xem
+								</a>
+								<a href="/Cart/Add/@item.ProductId" class="btn btn-primary btn-sm rounded-pill px-3 flex-grow-1" title="Thêm vào giỏ">
+									<i class="fa fa-cart-plus me-1"></i> Thêm giỏ
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				featuredIndex++;
+			}
+		</div>
+		<div class="nv-featured-grid-pagination" id="featuredGridPagination" hidden>
+			<button type="button" class="btn btn-sm btn-outline-primary rounded-pill nv-featured-grid-page-btn" id="featuredGridPrev">Tr&#432;&#7899;c</button>
+			<span class="nv-featured-grid-page-status" id="featuredGridStatus">1 / 1</span>
+			<button type="button" class="btn btn-sm btn-outline-primary rounded-pill nv-featured-grid-page-btn" id="featuredGridNext">Sau</button>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		(function () {
+			const grid = document.getElementById('featuredGridProducts');
+			const pagination = document.getElementById('featuredGridPagination');
+			if (!grid || !pagination) return;
+
+			const items = Array.from(grid.querySelectorAll('[data-featured-grid-item]'));
+			const prevBtn = document.getElementById('featuredGridPrev');
+			const nextBtn = document.getElementById('featuredGridNext');
+			const status = document.getElementById('featuredGridStatus');
+			let currentPage = 1;
+
+			function getPageSize() {
+				if (window.matchMedia('(max-width: 575.98px)').matches) return 3;
+				if (window.matchMedia('(max-width: 991.98px)').matches) return 6;
+				return 9;
+			}
+
+			function renderPage() {
+				const pageSize = getPageSize();
+				const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+				currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+				const start = (currentPage - 1) * pageSize;
+				const end = start + pageSize;
+
+				items.forEach(function (item, index) {
+					item.hidden = index < start || index >= end;
+				});
+
+				pagination.hidden = totalPages <= 1;
+				if (status) status.textContent = currentPage + ' / ' + totalPages;
+				if (prevBtn) prevBtn.disabled = currentPage <= 1;
+				if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+			}
+
+			if (prevBtn) prevBtn.addEventListener('click', function () {
+				currentPage -= 1;
+				renderPage();
+			});
+			if (nextBtn) nextBtn.addEventListener('click', function () {
+				currentPage += 1;
+				renderPage();
+			});
+			window.addEventListener('resize', function () {
+				currentPage = 1;
+				renderPage();
+			});
+
+			renderPage();
+		})();
+		// Sao chép mã voucher: yêu cầu đăng nhập nếu chưa có phiên người dùng
+		async function handleCopyVoucher(code, isLoggedIn) {
+			if (!isLoggedIn) {
+				alert('Vui lòng đăng nhập để sao chép và sử dụng mã voucher.');
+				return;
+			}
+			if (!navigator.clipboard) {
+				alert('Trình duyệt không hỗ trợ sao chép tự động. Vui lòng chọn và copy mã: ' + code);
+				return;
+			}
+			try {
+				await navigator.clipboard.writeText(code);
+				alert('Đã sao chép mã ' + code + ' vào bộ nhớ tạm.');
+			} catch {
+				alert('Không sao chép được. Vui lòng chọn và copy mã: ' + code);
+			}
+		}
+
+		// Entry banner: hiển thị 1 lần mỗi ngày, đóng bằng X / ESC / click backdrop
+		(function () {
+			const bannerEl = document.getElementById('nvEntryBanner');
+			if (!bannerEl) return;
+
+			const closeBtn = document.getElementById('nvEntryBannerCloseBtn');
+			const goHomeBtn = document.getElementById('nvEntryBannerGoHomeBtn');
+			const productScroller = bannerEl.querySelector('.nv-entry-banner__products');
+			const productItems = Array.from(bannerEl.querySelectorAll('.nv-entry-banner__product-item'));
+			const paginationEl = document.getElementById('nvEntryBannerPagination');
+			const prevBtn = document.getElementById('nvEntryBannerPrevBtn');
+			const nextBtn = document.getElementById('nvEntryBannerNextBtn');
+			const pageStatus = document.getElementById('nvEntryBannerPageStatus');
+			const storageKey = 'nv_entry_banner_closed_@todayKey';
+			let currentPage = 1;
+			let pageSize = getPageSize();
+
+			function getPageSize() {
+				return window.matchMedia('(max-width: 575.98px)').matches ? 4 : 6;
+			}
+
+			function renderProductPage() {
+				if (!productItems.length) {
+					if (paginationEl) paginationEl.style.display = 'none';
+					return;
+				}
+
+				pageSize = getPageSize();
+				const totalPages = Math.max(1, Math.ceil(productItems.length / pageSize));
+				currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+				const start = (currentPage - 1) * pageSize;
+				const end = start + pageSize;
+
+				productItems.forEach(function (item, index) {
+					item.hidden = index < start || index >= end;
+				});
+
+				if (paginationEl) paginationEl.style.display = totalPages > 1 ? 'flex' : 'none';
+				if (pageStatus) pageStatus.textContent = currentPage + ' / ' + totalPages;
+				if (prevBtn) prevBtn.disabled = currentPage <= 1;
+				if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+				if (productScroller) productScroller.scrollTop = 0;
+			}
+
+			function goToProductPage(delta) {
+				currentPage += delta;
+				renderProductPage();
+			}
+
+			function openBanner() {
+				renderProductPage();
+				bannerEl.classList.add('is-open');
+				bannerEl.setAttribute('aria-hidden', 'false');
+				document.body.style.overflow = 'hidden';
+				document.body.style.overflowX = 'hidden';
+			}
+
+			function closeBanner() {
+				// Không lưu trạng thái đóng banner nữa để lần sau vào trang vẫn hiện
+				// try { localStorage.setItem(storageKey, '1'); } catch (_) { }
+				bannerEl.classList.remove('is-open');
+				bannerEl.setAttribute('aria-hidden', 'true');
+				document.body.style.overflow = '';
+				document.body.style.overflowX = '';
+			}
+
+			function shouldShow() {
+				// Luôn hiển thị banner mỗi lần tải trang chủ
+				return true;
+			}
+
+			document.addEventListener('keydown', function (e) {
+				if (e.key === 'Escape' && bannerEl.classList.contains('is-open')) closeBanner();
+			});
+
+			bannerEl.addEventListener('click', function (e) {
+				const t = e.target;
+				if (t && t.getAttribute && t.getAttribute('data-entry-banner-close') === 'backdrop') closeBanner();
+			});
+
+			if (closeBtn) closeBtn.addEventListener('click', closeBanner);
+			if (goHomeBtn) goHomeBtn.addEventListener('click', closeBanner);
+			if (prevBtn) prevBtn.addEventListener('click', function () { goToProductPage(-1); });
+			if (nextBtn) nextBtn.addEventListener('click', function () { goToProductPage(1); });
+			window.addEventListener('resize', function () {
+				const nextPageSize = getPageSize();
+				if (nextPageSize !== pageSize) {
+					currentPage = 1;
+					renderProductPage();
+				}
+			});
+
+			// Đợi UI sẵn sàng rồi bật banner
+			if (shouldShow()) {
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', openBanner);
+				} else {
+					openBanner();
+				}
+			}
+		})();
+
+		(async function () {
+			const statusEl = document.getElementById('locationStatus');
+			const debugEl = document.getElementById('locationDebug');
+			const btn = document.getElementById('btnLocate');
+			const suggestionsEl = document.getElementById('regionSuggestions');
+			const mapEl = document.getElementById('map');
+			function initNearbyProductsPager() {
+				if (!suggestionsEl) return;
+				const grid = suggestionsEl.querySelector('[data-nearby-products-grid]');
+				const pagination = suggestionsEl.querySelector('[data-nearby-pagination]');
+				if (!grid || !pagination) return;
+				const items = Array.from(grid.querySelectorAll('[data-nearby-product-item]'));
+				const prevBtn = pagination.querySelector('[data-nearby-prev]');
+				const nextBtn = pagination.querySelector('[data-nearby-next]');
+				const status = pagination.querySelector('[data-nearby-page-status]');
+				let currentPage = 1;
+
+				function getPageSize() {
+					if (window.matchMedia('(max-width: 575.98px)').matches) return 4;
+					if (window.matchMedia('(max-width: 991.98px)').matches) return 5;
+					return 6;
+				}
+
+				function renderPage() {
+					const pageSize = getPageSize();
+					const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+					currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+					const start = (currentPage - 1) * pageSize;
+					const end = start + pageSize;
+					items.forEach(function (item, index) {
+						item.hidden = index < start || index >= end;
+					});
+					pagination.hidden = totalPages <= 1;
+					if (status) status.textContent = currentPage + ' / ' + totalPages;
+					if (prevBtn) prevBtn.disabled = currentPage <= 1;
+					if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+				}
+
+				if (prevBtn) prevBtn.onclick = function () {
+					currentPage -= 1;
+					renderPage();
+				};
+				if (nextBtn) nextBtn.onclick = function () {
+					currentPage += 1;
+					renderPage();
+				};
+				renderPage();
+			}
+			initNearbyProductsPager();
+			const defaultLocation = '@(Model.DefaultRegionLabel ?? "Hà Nội")';
+
+			async function loadDefault() {
+				try {
+					const res = await fetch(`/Home/RegionSuggestions?location=${encodeURIComponent(defaultLocation)}`, {
+						headers: { 'X-Requested-With': 'XMLHttpRequest' }
+					});
+					if (res.ok) {
+						suggestionsEl.innerHTML = await res.text();
+						initNearbyProductsPager();
+					}
+				} catch (_) { }
+			}
+
+			if (!mapEl) {
+				if (statusEl) statusEl.textContent = `Không tìm thấy vùng hiển thị bản đồ. Đang hiển thị danh sách gợi ý.`;
+				await loadDefault();
+				return;
+			}
+			if (!window.L) {
+				if (statusEl) statusEl.textContent = `Không tải được bản đồ. Vẫn đang hiển thị danh sách đặc sản gợi ý.`;
+				await loadDefault();
+				return;
+			}
+			// Đợi phần tử bản đồ có kích thước (tránh Leaflet tính sai)
+			function ensureMapSize(cb) {
+				if (mapEl.offsetParent !== null && mapEl.offsetHeight > 0) {
+					cb();
+					return;
+				}
+				var attempts = 0;
+				var t = setInterval(function () {
+					if (mapEl.offsetParent !== null && mapEl.offsetHeight > 0) {
+						clearInterval(t);
+						cb();
+					} else if (++attempts > 50) {
+						clearInterval(t);
+						cb();
+					}
+				}, 100);
+			}
+
+			// Bản đồ Hà Nội (tương tác) dùng Leaflet + OpenStreetMap, không cần API key.
+			const hanoiLatLng = [21.0285, 105.8542];
+			let map;
+			ensureMapSize(function () {
+				map = L.map('map', { zoomControl: true }).setView(hanoiLatLng, 11); // Tâm Hà Nội
+				L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					maxZoom: 19,
+					attribution: 'Leaflet | &copy; OpenStreetMap'
+				}).addTo(map);
+				let marker = L.marker(hanoiLatLng).addTo(map); // Marker mặc định chỉ thẳng vào Hà Nội
+				marker.bindPopup('Hà Nội');
+				let accuracyCircle = null;
+				let clickMarker = null;
+				setTimeout(function () {
+					if (map && map.invalidateSize) map.invalidateSize();
+				}, 100);
+
+				function setStatus(text) {
+					if (statusEl) statusEl.textContent = text;
+				}
+				function setStatusDebug(text) {
+					if (debugEl) debugEl.textContent = text ? `[Debug] ${text}` : '';
+				}
+
+				async function reverseGeocodeServer(lat, lng) {
+					const url = `/Home/ReverseGeocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
+					const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+					if (!res.ok) throw new Error('reverse geocode failed');
+					return await res.json();
+				}
+
+				async function loadSuggestions(locationText) {
+					if (!suggestionsEl) return;
+					const url = `/Home/RegionSuggestions?location=${encodeURIComponent(locationText)}`;
+					const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+					if (!res.ok) throw new Error('suggestions failed');
+					const html = await res.text();
+					suggestionsEl.innerHTML = html;
+					initNearbyProductsPager();
+				}
+
+				async function loadSuggestionsByLatLng(lat, lng) {
+					if (!suggestionsEl) return;
+					const url = `/Home/RegionSuggestionsByLatLng?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
+					const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+					if (!res.ok) throw new Error('suggestions-latlng failed');
+					const html = await res.text();
+					suggestionsEl.innerHTML = html;
+					initNearbyProductsPager();
+				}
+
+				function setUserMarker(lat, lng, accuracyMeters, popupText) {
+					if (marker) marker.remove();
+					if (accuracyCircle) accuracyCircle.remove();
+					accuracyCircle = null;
+
+					marker = L.marker([lat, lng]).addTo(map);
+					if (popupText) marker.bindPopup(popupText);
+
+					const acc = Number(accuracyMeters);
+					if (Number.isFinite(acc) && acc > 0) {
+						accuracyCircle = L.circle([lat, lng], {
+							radius: acc,
+							color: '#0d6efd',
+							weight: 2,
+							fillColor: '#0d6efd',
+							fillOpacity: 0.12
+						}).addTo(map);
+
+						try {
+							map.fitBounds(accuracyCircle.getBounds(), { padding: [24, 24], maxZoom: 16 });
+						} catch (_) {
+							map.setView([lat, lng], 13);
+						}
+					} else {
+						map.setView([lat, lng], 13);
+					}
+				}
+
+				async function locate() {
+					setStatusDebug('');
+					if (!navigator.geolocation) {
+						setStatus('Trình duyệt không hỗ trợ định vị. Đang thử định vị theo IP...');
+						await locateByIp();
+						return;
+					}
+
+					// Geolocation trên trình duyệt thường yêu cầu HTTPS (trừ localhost)
+					const host = (location.hostname || '').toLowerCase();
+					const isLocalhostLike = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+					if (location.protocol !== 'https:' && !isLocalhostLike) {
+						setStatus('Không thể lấy GPS vì trang chưa chạy HTTPS (hoặc chưa phải localhost). Đang thử định vị theo IP (ước lượng)...');
+						await locateByIp();
+						return;
+					}
+
+					// Nếu đã bị từ chối quyền vị trí, khỏi chờ GPS, chuyển sang IP fallback ngay
+					try {
+						if (navigator.permissions?.query) {
+							const p = await navigator.permissions.query({ name: 'geolocation' });
+							if (p?.state === 'denied') {
+								setStatus('Bạn đã từ chối quyền vị trí cho trang này. Hãy bật lại trong cài đặt trình duyệt, hoặc dùng định vị theo IP (ước lượng)...');
+								await locateByIp();
+								return;
+							}
+						}
+					} catch (_) { }
+
+					if (btn) {
+						btn.disabled = true;
+						btn.classList.add('disabled');
+					}
+
+					setStatus('Đang lấy vị trí (GPS)...');
+					try {
+						const h = (location.hostname || '').toLowerCase();
+						setStatusDebug(`secureContext=${String(window.isSecureContext)} protocol=${location.protocol} host=${h} ua=${(navigator.userAgent || '').slice(0, 60)}...`);
+					} catch (_) { }
+
+					// Lấy nhiều mẫu để tránh vị trí thô/cached; chọn mẫu có accuracy tốt nhất.
+					let best = null; // { lat, lng, accuracy }
+					const startedAt = Date.now();
+					const goodAccuracyMeters = 80;
+					const usableAccuracyMeters = 1000;
+					const maxWaitMs = 30000;
+					let watchId = null;
+					let finalized = false;
+
+					function finish() {
+						if (watchId != null) {
+							try { navigator.geolocation.clearWatch(watchId); } catch (_) { }
+							watchId = null;
+						}
+						if (btn) {
+							btn.disabled = false;
+							btn.classList.remove('disabled');
+						}
+					}
+
+					async function finalizeBest() {
+						if (finalized) return;
+						finalized = true;
+						finish();
+						if (!best) {
+							await onErr({ code: 3, message: 'no best position' });
+							return;
+						}
+						try {
+							const acc = best?.accuracy;
+							const accText = Number.isFinite(acc) ? `±${Math.round(acc)}m` : 'không rõ';
+							setStatus(`Đang tải đặc sản theo tọa độ... [${best.lat.toFixed(6)}, ${best.lng.toFixed(6)} ${accText}]`);
+							setUserMarker(best.lat, best.lng, best.accuracy, 'Vị trí của bạn');
+							await loadSuggestionsByLatLng(best.lat, best.lng);
+
+							try {
+								const data = await reverseGeocodeServer(best.lat, best.lng);
+								const locationText = data.location || 'Khu vực của bạn';
+								const lowQuality = Number.isFinite(acc) && acc >= usableAccuracyMeters;
+								setStatus(`Vị trí: ${locationText} (${accText})${lowQuality ? ' — độ chính xác thấp, hãy bật “Vị trí chính xác”/Wi‑Fi và thử lại.' : ''} [${best.lat.toFixed(6)}, ${best.lng.toFixed(6)}]`);
+								setUserMarker(best.lat, best.lng, best.accuracy, locationText);
+							} catch (_) { }
+						} catch (e) {
+							setStatus(`Không thể tải đặc sản theo tọa độ. Đang hiển thị mặc định: ${defaultLocation}`);
+							await loadDefault();
+						}
+					}
+
+					function shouldFinalize() {
+						if (!best) return false;
+						if (best.accuracy <= goodAccuracyMeters) return true;
+						// chờ vài giây để GPS ổn định rồi chốt vị trí tốt nhất đang có
+						if (best.accuracy <= usableAccuracyMeters && Date.now() - startedAt >= 12000) return true;
+						return false;
+					}
+
+					const onPos = async (pos) => {
+						if (finalized) return;
+						const lat = pos.coords.latitude;
+						const lng = pos.coords.longitude;
+						const accuracy = Number(pos.coords.accuracy);
+
+						const acc = (Number.isFinite(accuracy) && accuracy > 0) ? accuracy : Infinity;
+						if (!best || acc < best.accuracy) best = { lat, lng, accuracy: acc };
+
+						const accText = Number.isFinite(accuracy) ? `~${Math.round(accuracy)}m` : 'không rõ';
+						setStatus(`Đang lấy vị trí (độ chính xác ${accText})...`);
+
+						// show live marker để người dùng thấy map đang cập nhật
+						setUserMarker(lat, lng, accuracy, 'Vị trí của bạn');
+
+						if (!shouldFinalize()) return;
+						await finalizeBest();
+					};
+
+					const onErr = async (err) => {
+						if (finalized) return;
+						finalized = true;
+						finish();
+						// err.code: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+						const code = Number(err?.code);
+						const msg = (err && typeof err.message === 'string') ? err.message : '';
+						if (code === 1) {
+							setStatus('Bạn đã từ chối quyền vị trí cho trang này. Hãy bấm biểu tượng ổ khóa trên thanh địa chỉ → Site settings → Location → Allow, hoặc bật lại Location trong Windows. Đang thử định vị theo IP (ước lượng)...');
+						} else if (code === 2) {
+							setStatus('Thiết bị/trình duyệt không thể xác định vị trí (POSITION_UNAVAILABLE). Hãy bật Location trong Windows, bật Wi‑Fi, hoặc bật “Vị trí chính xác” trên thiết bị. Đang thử định vị theo IP (ước lượng)...');
+						} else if (code === 3) {
+							setStatus('Định vị GPS bị timeout. Hãy thử lại sau vài giây, hoặc bật Location/Wi‑Fi để tăng khả năng định vị. Đang thử định vị theo IP (ước lượng)...');
+						} else {
+							setStatus('Không lấy được GPS (có thể bạn chưa cho phép quyền hoặc thiết bị không bật dịch vụ vị trí). Đang thử định vị theo IP (ước lượng)...');
+						}
+						try { setStatusDebug(`geo_error code=${String(code || 'n/a')} message=${msg || 'n/a'}`); } catch (_) { }
+						await locateByIp();
+					};
+
+					const opts = { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 };
+					try {
+						watchId = navigator.geolocation.watchPosition(onPos, function (err) {
+							try { setStatusDebug(`geo_watch_error code=${String(err?.code || 'n/a')} message=${err?.message || 'n/a'}`); } catch (_) { }
+						}, opts);
+					} catch (_) { }
+					// getCurrentPosition trước để Edge chắc chắn prompt + trả tọa độ 1 lần
+					try {
+						const firstPos = await new Promise((resolve, reject) => {
+							navigator.geolocation.getCurrentPosition(resolve, reject, opts);
+						});
+						await onPos(firstPos);
+					} catch (e) {
+						if (watchId == null) {
+							await onErr(e);
+							return;
+						}
+						try { setStatusDebug(`geo_current_error code=${String(e?.code || 'n/a')} message=${e?.message || 'n/a'}`); } catch (_) { }
+					}
+
+					// Nếu quá lâu vẫn chưa chốt, chốt theo best hiện có (nếu có)
+					setTimeout(function () {
+						if (finalized) return;
+						if (watchId != null) {
+							try { navigator.geolocation.clearWatch(watchId); } catch (_) { }
+							watchId = null;
+						}
+						(async function () {
+							if (best) await finalizeBest();
+							else await onErr({ code: 3, message: 'timeout' });
+						})();
+					}, maxWaitMs);
+				}
+
+				async function locateByIp() {
+					try {
+						// Dùng GeoIP server-side để tránh Edge Tracking Prevention/CORS/rate-limit phía client
+						const res = await fetch('/Home/GeoIp', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+						if (!res.ok) throw new Error(`geoip ${res.status}`);
+						const data = await res.json();
+						const lat = data?.lat;
+						const lng = data?.lng;
+						const location = data?.location;
+
+						if (lat && lng) {
+							setUserMarker(lat, lng, null, location || 'Vị trí (ước lượng)');
+							map.setView([lat, lng], 10);
+						}
+
+						if (lat && lng) {
+							setStatus(`Vị trí (ước lượng theo IP). Đang tải đặc sản theo tọa độ... [${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}]`);
+							await loadSuggestionsByLatLng(lat, lng);
+							if (location) setStatus(`Vị trí (ước lượng theo IP): ${location} [${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}]`);
+						} else if (location) {
+							setStatus(`Vị trí (ước lượng theo IP): ${location}`);
+							await loadSuggestions(location);
+						} else {
+							setStatus(`Không thể định vị theo IP. Đang hiển thị mặc định: ${defaultLocation}`);
+							await loadDefault();
+						}
+					} catch (e) {
+						setStatus(`Không thể định vị theo IP. Đang hiển thị mặc định: ${defaultLocation}`);
+						await loadDefault();
+					}
+				}
+
+				if (btn) btn.addEventListener('click', locate);
+
+				map.on('click', async function (e) {
+					const lat = e.latlng.lat;
+					const lng = e.latlng.lng;
+					if (clickMarker) clickMarker.remove();
+					clickMarker = L.circleMarker([lat, lng], { radius: 8, color: '#0d6efd' }).addTo(map);
+					try {
+						setStatus(`Đang tải đặc sản theo điểm bạn chọn... [${lat.toFixed(6)}, ${lng.toFixed(6)}]`);
+						await loadSuggestionsByLatLng(lat, lng);
+						try {
+							const data = await reverseGeocodeServer(lat, lng);
+							const locationText = data.location || 'Khu vực bạn chọn';
+							setStatus(`Khu vực đã chọn: ${locationText} [${lat.toFixed(6)}, ${lng.toFixed(6)}]`);
+						} catch (_) { }
+					} catch (e2) {
+						setStatus(`Không thể tải đặc sản theo điểm bạn chọn. Đang hiển thị mặc định: ${defaultLocation}`);
+						await loadDefault();
+					}
+				});
+
+				loadDefault();
+			});
+		})();
+	</script>
+}
+
+
+<!-- Blog / Câu chuyện vùng miền -->
+<section class="nv-blog-section py-5 bg-secondary">
+	<div class="container py-5">
+		<div class="text-center mb-4">
+			<span class="text-uppercase text-light small fw-semibold" style="letter-spacing:.12em;">
+				Câu chuyện vùng miền
+			</span>
+			<h2 class="h3 fw-bold text-white mt-2 mb-2">
+				Góc chia sẻ Tinh hoa đặc sản Việt
+			</h2>
+			<p class="text-light mb-0" style="opacity:.9;">
+				Những câu chuyện, bí quyết chọn quà và gợi ý đặc sản theo từng vùng miền.
+			</p>
+		</div>
+
+		<div class="row g-4">
+			<div class="col-lg-4">
+				<article class="card h-100 border-0 shadow-sm">
+					<img src="~/img/hero-img-1.jpg" class="card-img-top object-fit-cover" style="height:220px;" alt="Quà biếu đặc sản">
+					<div class="card-body d-flex flex-column">
+						<h5 class="card-title">Quà biếu đặc sản: Chọn sao cho khéo?</h5>
+						<p class="card-text text-muted small">
+							Gợi ý chọn quà đặc sản theo vùng miền, phù hợp cho đối tác, gia đình và bạn bè.
+							Từ trà, mứt, bánh đến các set quà mix nhiều vùng – giúp bạn gửi tặng món quà vừa đẹp, vừa đúng gu người nhận.
+						</p>
+						<a href="/Product" class="mt-auto btn btn-outline-primary btn-sm rounded-pill px-3">
+							Xem gợi ý quà biếu
+						</a>
+					</div>
+				</article>
+			</div>
+
+			<div class="col-lg-4">
+				<article class="card h-100 border-0 shadow-sm">
+					<img src="~/img/hero-img-2.jpg" class="card-img-top object-fit-cover" style="height:220px;" alt="Đặc sản miền Bắc">
+					<div class="card-body d-flex flex-column">
+						<h5 class="card-title">Hương vị miền Bắc trong từng món quà</h5>
+						<p class="card-text text-muted small">
+							Trà sen, cốm, chả cá… và những món đặc sản mang đậm hương vị đất Bắc.
+							Mỗi hộp quà là một lát cắt nhỏ của Hà Nội và các vùng lân cận, phù hợp để biếu tặng dịp lễ, tết hoặc khi đi xa.
+						</p>
+						<a href="/Product?q=Mi%E1%BB%81n%20B%E1%BA%AFc" class="mt-auto btn btn-outline-primary btn-sm rounded-pill px-3">
+							Xem đặc sản miền Bắc
+						</a>
+					</div>
+				</article>
+			</div>
+
+			<div class="col-lg-4">
+				<article class="card h-100 border-0 shadow-sm">
+					<img src="~/img/hero-img-3.jpg" class="card-img-top object-fit-cover" style="height:220px;" alt="Đặc sản miền Tây">
+					<div class="card-body d-flex flex-column">
+						<h5 class="card-title">Khám phá đặc sản miền sông nước</h5>
+						<p class="card-text text-muted small">
+							Khô cá, mắm, trái cây miệt vườn – những món không thể thiếu khi nhắc tới miền Tây.
+							Khám phá những combo quà đậm chất sông nước, mang trọn vị ngọt lành của vùng đất phù sa đến bàn ăn gia đình bạn.
+						</p>
+						<a href="/Product?q=Mi%E1%BB%81n%20Nam" class="mt-auto btn btn-outline-primary btn-sm rounded-pill px-3">
+							Xem đặc sản miền Tây
+						</a>
+					</div>
+				</article>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- Bán chạy -->
+<section class="nv-bestseller-section py-5">
+	<div class="container">
+		<div class="text-center mb-4">
+			<span class="text-secondary text-uppercase small fw-semibold" style="letter-spacing:.12em;">Được yêu thích</span>
+			<h2 class="h3 fw-bold text-dark mt-2 mb-0">Bán chạy</h2>
+		</div>
+		<div class="row g-4 justify-content-center">
+			@foreach (var item in (Model.AdvertisedProducts ?? Enumerable.Empty<EXE.Models.Product>()).Take(4))
+			{
+				var image = item.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+				<div class="col-6 col-md-4 col-lg-3">
+					<div class="nv-product-card nv-product-card--grid nv-product-card--bestseller card h-100 border-0 shadow-sm">
+						<div class="nv-product-card__img-wrap position-relative">
+							<a href="/Product/Details/@item.ProductId">
+								<img src="~/img/@image" class="nv-product-card__img" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+							</a>
+						</div>
+						<div class="card-body d-flex flex-column p-3">
+							<a href="/Product/Details/@item.ProductId" class="text-decoration-none text-dark">
+								<h5 class="card-title nv-product-card__title mb-2">@item.ProductName</h5>
+							</a>
+							<div class="mt-auto pt-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+								<span class="text-primary fw-bold">@String.Format("{0:N0}", item.Price) đ</span>
+								<div class="d-flex gap-2">
+									<a href="/Product/Details/@item.ProductId" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Xem</a>
+									<a href="/Cart/Add/@item.ProductId" class="btn btn-sm btn-primary rounded-pill px-3" title="Thêm giỏ"><i class="fa fa-cart-plus"></i></a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+		<div class="text-center mt-4">
+			<a href="/Product" class="btn btn-outline-primary rounded-pill px-4">Xem tất cả đặc sản</a>
+		</div>
+	</div>
+</section>
+
+<!-- Khach hang noi gi -->
+<section class="nv-testimonial-section py-5">
+	<div class="container">
+		<div class="text-center mb-5">
+			<span class="text-secondary text-uppercase small fw-semibold" style="letter-spacing:.12em;">C&#7843;m nh&#7853;n</span>
+			<h2 class="h3 fw-bold text-dark mt-2 mb-0">Kh&#225;ch h&#224;ng n&#243;i g&#236;</h2>
+		</div>
+	</div>
+	<div class="nv-testimonial-marquee" aria-label="Cam nhan khach hang">
+		<div class="nv-testimonial-track">
+			@for (var round = 0; round < 2; round++)
+			{
+				<div class="nv-testimonial-slide">
+					<div class="nv-testimonial-card card border-0 shadow-sm h-100"><div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></div>
+						<p class="nv-testimonial-card__text mb-4">S&#7843;n ph&#7849;m r&#7845;t ngon, &#273;&#243;ng g&#243;i c&#7849;n th&#7853;n v&#224; &#273;&#250;ng chu&#7849;n v&#7883; qu&#234;.</p>
+						<div class="d-flex align-items-center gap-3"><div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">A</div><div><div class="fw-semibold">Anh Tu&#7845;n</div><div class="small text-muted">Kh&#225;ch h&#224;ng th&#226;n thi&#7871;t</div></div></div>
+					</div></div>
+				</div>
+				<div class="nv-testimonial-slide">
+					<div class="nv-testimonial-card card border-0 shadow-sm h-100"><div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star-half-o"></i></div>
+						<p class="nv-testimonial-card__text mb-4">M&#236;nh mua l&#224;m qu&#224; bi&#7871;u, h&#7897;p &#273;&#7865;p, giao nhanh, ng&#432;&#7901;i nh&#7853;n r&#7845;t th&#237;ch.</p>
+						<div class="d-flex align-items-center gap-3"><div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">L</div><div><div class="fw-semibold">Linh Chi</div><div class="small text-muted">Kh&#225;ch h&#224;ng doanh nghi&#7879;p</div></div></div>
+					</div></div>
+				</div>
+				<div class="nv-testimonial-slide">
+					<div class="nv-testimonial-card card border-0 shadow-sm h-100"><div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></div>
+						<p class="nv-testimonial-card__text mb-4">Gia &#273;&#236;nh m&#236;nh &#7903; xa qu&#234; n&#234;n r&#7845;t th&#237;ch c&#225;c set &#273;&#7863;c s&#7843;n, &#259;n v&#7915;a mi&#7879;ng.</p>
+						<div class="d-flex align-items-center gap-3"><div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">M</div><div><div class="fw-semibold">Minh Khang</div><div class="small text-muted">Kh&#225;ch h&#224;ng th&#226;n thi&#7871;t</div></div></div>
+					</div></div>
+				</div>
+				<div class="nv-testimonial-slide">
+					<div class="nv-testimonial-card card border-0 shadow-sm h-100"><div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></div>
+						<p class="nv-testimonial-card__text mb-4">&#272;&#432;&#7907;c t&#432; v&#7845;n k&#7929; v&#7873; t&#7915;ng v&#249;ng, m&#243;n n&#224;o c&#361;ng c&#243; c&#226;u chuy&#7879;n r&#7845;t hay.</p>
+						<div class="d-flex align-items-center gap-3"><div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">P</div><div><div class="fw-semibold">Ph&#432;&#417;ng Nhi</div><div class="small text-muted">Kh&#225;ch h&#224;ng</div></div></div>
+					</div></div>
+				</div>
+				<div class="nv-testimonial-slide">
+					<div class="nv-testimonial-card card border-0 shadow-sm h-100"><div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></div>
+						<p class="nv-testimonial-card__text mb-4">Giao h&#224;ng nhanh, s&#7843;n ph&#7849;m c&#242;n nguy&#234;n v&#7865;n, gi&#225; h&#7907;p l&#253; so v&#7899;i ch&#7845;t l&#432;&#7907;ng.</p>
+						<div class="d-flex align-items-center gap-3"><div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">T</div><div><div class="fw-semibold">Thu H&#224;</div><div class="small text-muted">Kh&#225;ch h&#224;ng</div></div></div>
+					</div></div>
+				</div>
+				<div class="nv-testimonial-slide">
+					<div class="nv-testimonial-card card border-0 shadow-sm h-100"><div class="card-body p-4">
+						<div class="nv-testimonial-card__stars mb-3 text-warning small"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></div>
+						<p class="nv-testimonial-card__text mb-4">T&#244;i s&#7869; ti&#7871;p t&#7909;c mua l&#7847;n sau, &#273;&#7863;c bi&#7879;t l&#224; c&#225;c combo qu&#224; t&#7863;ng.</p>
+						<div class="d-flex align-items-center gap-3"><div class="nv-testimonial-card__avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">Q</div><div><div class="fw-semibold">Qu&#7889;c B&#7843;o</div><div class="small text-muted">Kh&#225;ch h&#224;ng</div></div></div>
+					</div></div>
+				</div>
+			}
+		</div>
+	</div>
+</section>
