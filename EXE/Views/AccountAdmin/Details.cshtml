@@ -7,6 +7,9 @@
     int orderCount = ViewBag.OrderCount ?? 0;
     int reviewCount = ViewBag.ReviewCount ?? 0;
     decimal orderTotal = ViewBag.OrderTotal ?? 0m;
+    string? sellerApprovalStatus = ViewBag.SellerApprovalStatus as string;
+    string? sellerRejectReason = ViewBag.SellerRejectReason as string;
+    string? sellerApprovedBy = ViewBag.SellerApprovedBy as string;
 }
 
 <div class="container-fluid py-3">
@@ -72,6 +75,21 @@
                     <div class="text-muted small">Vai trò</div>
                     <div class="fw-semibold">@Model.Role?.RoleName</div>
                 </div>
+                @if (isSeller)
+                {
+                    <div class="col-md-6">
+                        <div class="text-muted small">Trạng thái duyệt seller</div>
+                        <div class="fw-semibold">@((string.IsNullOrWhiteSpace(sellerApprovalStatus) ? "Đã duyệt" : sellerApprovalStatus))</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Duyệt bởi</div>
+                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(sellerApprovedBy) ? "Chưa có" : sellerApprovedBy)</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Lý do từ chối</div>
+                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(sellerRejectReason) ? "Không có" : sellerRejectReason)</div>
+                    </div>
+                }
                 <div class="col-12">
                     <div class="text-muted small">Địa chỉ</div>
                     <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.Address) ? "Chưa có" : Model.Address)</div>
@@ -104,6 +122,13 @@
                     <input type="hidden" name="returnTo" value="@returnTo" />
                     <button type="submit" class="btn btn-outline-danger rounded-pill px-4">Xóa tài khoản</button>
                 </form>
+                @if (isSeller && !string.Equals(sellerApprovalStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                {
+                    <form method="post" action="/AccountAdmin/ApproveSeller/@Model.UserId" class="d-inline">
+                        <input type="hidden" name="returnTo" value="@returnTo" />
+                        <button type="submit" class="btn btn-success rounded-pill px-4">Duyệt seller</button>
+                    </form>
+                }
             </div>
         </div>
     </div>

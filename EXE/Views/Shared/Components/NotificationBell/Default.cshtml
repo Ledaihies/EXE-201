@@ -1,0 +1,54 @@
+@model EXE.ViewModels.NotificationBellViewModel
+
+@{
+    var hasNotifications = Model.Notifications.Any();
+}
+
+<div class="dropdown my-auto">
+    <a class="btn user-btn dropdown-toggle position-relative"
+       href="#"
+       role="button"
+       data-bs-toggle="dropdown"
+       aria-expanded="false"
+       aria-label="Thông báo">
+        <i class="fas fa-bell me-2"></i>
+        <span>Thông báo</span>
+        @if (Model.UnreadCount > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@Model.UnreadCount</span>
+        }
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end p-0 notification-dropdown" style="min-width: 360px;">
+        <li class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+            <strong>Thông báo</strong>
+            <a href="/Notifications" class="small text-decoration-none">Xem tất cả</a>
+        </li>
+        @if (!hasNotifications)
+        {
+            <li class="px-3 py-4 text-center text-muted">Không có thông báo mới.</li>
+        }
+        else
+        {
+            foreach (var item in Model.Notifications)
+            {
+                <li class="border-bottom">
+                    <div class="dropdown-item-text @(item.IsRead ? string.Empty : "fw-semibold")">
+                        <div class="d-flex justify-content-between gap-2">
+                            <span class="badge bg-secondary align-self-start">@item.Type</span>
+                            @if (!item.IsRead)
+                            {
+                                <span class="badge bg-primary align-self-start">Mới</span>
+                            }
+                        </div>
+                        <div class="mt-2 fw-semibold">@item.Title</div>
+                        <div class="small text-muted">@item.Message</div>
+                        <div class="small text-muted mt-1">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                </li>
+            }
+        }
+        <li class="px-3 py-2 text-center">
+            <a href="/Notifications" class="btn btn-sm btn-outline-primary w-100">Xem tất cả thông báo</a>
+        </li>
+    </ul>
+</div>

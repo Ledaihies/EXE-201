@@ -62,6 +62,8 @@ namespace EXE.Controllers
         {
             if (!IsLoggedIn())
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { ok = false, message = "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng." });
                 return RedirectToAction("Login", "Auth");
             }
 
@@ -101,7 +103,17 @@ namespace EXE.Controllers
             if (product == null)
             {
                 TempData["CartError"] = "Sản phẩm chưa được duyệt hoặc không còn bán.";
-                return RedirectToAction("Index", "Product");
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { ok = false, message = TempData["CartError"] });
+                return RedirectBackOrProducts();
+            }
+            if (product.Stock.HasValue && product.Stock.Value <= 0)
+            {
+                const string message = "Sản phẩm đã hết hàng.";
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { ok = false, message });
+                TempData["CartError"] = message;
+                return RedirectBackOrProducts();
             }
             if (product != null && product.Stock.HasValue && product.Stock.Value > 0 && quantity > product.Stock.Value)
                 quantity = product.Stock.Value;
@@ -132,7 +144,24 @@ namespace EXE.Controllers
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Index");
+            TempData["SuccessMessage"] = "Thêm sản phẩm vào giỏ hàng thành công!";
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { ok = true, redirectUrl = Url.Action("Index", "Cart"), message = TempData["SuccessMessage"] });
+
+            return RedirectToAction("Index", "Cart");
+        }
+
+        private IActionResult RedirectBackOrProducts()
+        {
+            var referer = Request.Headers.Referer.ToString();
+            if (!string.IsNullOrWhiteSpace(referer) &&
+                Uri.TryCreate(referer, UriKind.Absolute, out var refererUri) &&
+                string.Equals(refererUri.Host, Request.Host.Host, StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect(referer);
+            }
+
+            return RedirectToAction("Index", "Product");
         }
 
         public async Task<IActionResult> Increase(int id)

@@ -3,17 +3,24 @@
 	ViewData["Title"] = "Chi tiết đơn #" + Model.OrderId;
 	var items = (Model.OrderItems ?? new List<OrderItem>()).ToList();
 	var subtotal = items.Sum(it => (it.Price ?? 0) * (it.Quantity ?? 0));
-	var statusName = Model.Status?.StatusName ?? "Cho nguoi ban xac nhan";
-	var canCancel = statusName == "Cho nguoi ban xac nhan" || statusName == "Cho lay hang";
-	var canConfirmReceived = statusName == "Cho giao hang";
-	var canReview = statusName == "Da nhan hang";
+	var statusName = Model.Status?.StatusName ?? "Chờ người bán xác nhận";
+	var canCancel = statusName == "Chờ người bán xác nhận" || statusName == "Chờ lấy hàng";
+	var canConfirmReceived = statusName == "Chờ giao hàng";
+	var canReview = statusName == "Đã nhận hàng";
 	var returnRequests = Model.ReturnRequests.OrderByDescending(r => r.CreatedDate).ToList();
 	var latestReturn = returnRequests.FirstOrDefault();
-	var canRequestReturn = statusName == "Da nhan hang" && !returnRequests.Any(r => r.Status == "Pending" || r.Status == "Approved");
+	var canRequestReturn = statusName == "Đã nhận hàng" && !returnRequests.Any(r => r.Status == "Pending" || r.Status == "Approved");
 	var reviewedProductIds = ViewBag.ReviewedProductIds as List<int> ?? new List<int>();
 	var message = TempData["OrderMessage"] as string;
-	var steps = new[] { "Cho nguoi ban xac nhan", "Cho lay hang", "Cho giao hang", "Da nhan hang" };
+	var steps = new[] { "Chờ người bán xác nhận", "Chờ lấy hàng", "Chờ giao hàng", "Đã nhận hàng" };
 	var currentStep = Array.IndexOf(steps, statusName);
+	statusName = Model.Status?.StatusName ?? "Cho nguoi ban xac nhan";
+	canCancel = statusName == "Cho nguoi ban xac nhan" || statusName == "Cho lay hang";
+	canConfirmReceived = statusName == "Cho giao hang";
+	canReview = statusName == "Da nhan hang";
+	canRequestReturn = statusName == "Da nhan hang" && !returnRequests.Any(r => r.Status == "Pending" || r.Status == "Approved");
+	steps = new[] { "Cho nguoi ban xac nhan", "Cho lay hang", "Cho giao hang", "Da nhan hang" };
+	currentStep = Array.IndexOf(steps, statusName);
 	string StatusClass(string? status) => status switch
 	{
 		"Cho nguoi ban xac nhan" => "bg-warning text-dark",
@@ -23,6 +30,13 @@
 		"Da huy" => "bg-danger",
 		"Cho xac nhan hoan hang" => "bg-warning text-dark",
 		"Da hoan tien" => "bg-success",
+		"Chờ người bán xác nhận" => "bg-warning text-dark",
+		"Chờ lấy hàng" => "bg-info text-dark",
+		"Chờ giao hàng" => "bg-primary",
+		"Đã nhận hàng" => "bg-success",
+		"Đã hủy" => "bg-danger",
+		"Chờ xác nhận hoàn hàng" => "bg-warning text-dark",
+		"Đã hoàn tiền" => "bg-success",
 		_ => "bg-secondary"
 	};
 	string StatusLabel(string? status) => status switch

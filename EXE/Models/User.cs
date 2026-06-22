@@ -44,6 +44,23 @@ public partial class User
 
     public int? RoleId { get; set; }
 
+    [StringLength(20)]
+    public string? SellerApprovalStatus { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? SellerApprovedAt { get; set; }
+
+    public int? SellerApprovedByAdminId { get; set; }
+
+    [StringLength(500)]
+    public string? SellerRejectReason { get; set; }
+
+    [StringLength(255)]
+    public string? SellerLicenseImageUrl { get; set; }
+
+    [StringLength(255)]
+    public string? SellerOriginProofImageUrl { get; set; }
+
     [Column(TypeName = "datetime")]
     public DateTime? CreatedDate { get; set; }
 
@@ -57,14 +74,24 @@ public partial class User
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     [InverseProperty("User")]
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+
+    [InverseProperty("User")]
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     [ForeignKey("RoleId")]
     [InverseProperty("Users")]
     public virtual Role? Role { get; set; }
 
+    [ForeignKey("SellerApprovedByAdminId")]
+    [InverseProperty("SellerApprovedUsers")]
+    public virtual User? SellerApprovedByAdmin { get; set; }
+
     [InverseProperty("Seller")]
     public virtual ICollection<Product> SellerProducts { get; set; } = new List<Product>();
+
+    [InverseProperty("SellerApprovedByAdmin")]
+    public virtual ICollection<User> SellerApprovedUsers { get; set; } = new List<User>();
 
     [InverseProperty("User")]
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();

@@ -11,6 +11,8 @@
 	decimal shippingFee = Model.Any() ? 25000 : 0;
 	var total = subtotal + shippingFee;
 	var suggested = ViewBag.SuggestedProducts as List<Product> ?? new List<Product>();
+	var successMessage = TempData["SuccessMessage"] as string;
+	var cartError = TempData["CartError"] as string;
 }
 
 <!-- Single Page Header -->
@@ -26,6 +28,22 @@
 <div class="container-fluid py-5 nv-cart-page">
 	@Html.AntiForgeryToken()
 	<div class="container">
+		@if (!string.IsNullOrWhiteSpace(successMessage))
+		{
+			<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+				<div id="cartSuccessToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+					<div class="d-flex">
+						<div class="toast-body">@successMessage</div>
+						<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+					</div>
+				</div>
+			</div>
+		}
+		@if (!string.IsNullOrWhiteSpace(cartError))
+		{
+			<div class="alert alert-warning">@cartError</div>
+		}
+
 		<div class="row g-4">
 			<!-- Danh sách sản phẩm -->
 			<div class="col-lg-8">
@@ -52,7 +70,7 @@
 							var price = p?.Price ?? 0;
 							var qty = item.Quantity ?? 0;
 							var lineTotal = price * qty;
-							var desc = (p?.Description ?? "").Length > 80 ? (p?.Description ?? "").Substring(0, 80) + "…" : (p?.Description ?? "");
+							var desc = (p?.Description ?? "").Length > 80 ? (p?.Description ?? "").Substring(0, 80) + "..." : (p?.Description ?? "");
 
 							<div class="nv-cart-card card border-0 shadow-sm rounded-3 mb-3 overflow-hidden" data-cart-item-id="@item.CartItemId">
 								<div class="card-body p-0">
@@ -71,7 +89,7 @@
 														<p class="text-muted small mb-0 nv-cart-desc" title="@p?.Description">@desc</p>
 													}
 												</div>
-												<button type="button" class="btn btn-link text-danger p-0 nv-cart-remove" data-id="@item.CartItemId" aria-label="Xoá">
+												<button type="button" class="btn btn-link text-danger p-0 nv-cart-remove" data-id="@item.CartItemId" aria-label="Xóa">
 													<i class="fas fa-trash-alt"></i>
 												</button>
 											</div>
@@ -170,4 +188,15 @@
 
 @section Scripts {
 	<script src="~/js/cart.js"></script>
+	@if (!string.IsNullOrWhiteSpace(successMessage))
+	{
+		<script>
+			document.addEventListener('DOMContentLoaded', function () {
+				const toastEl = document.getElementById('cartSuccessToast');
+				if (!toastEl || !window.bootstrap) return;
+				const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+				toast.show();
+			});
+		</script>
+	}
 }

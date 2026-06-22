@@ -6,8 +6,21 @@
     var heading = ViewBag.Heading as string ?? "Quản lý tài khoản";
     var description = ViewBag.Description as string ?? "";
     var returnTo = isSeller ? "/AccountAdmin/Sellers" : "/AccountAdmin/Buyers";
+    var statusFilter = ViewBag.StatusFilter as string ?? "All";
     var message = TempData["AccountAdminMessage"] as string;
     var error = TempData["AccountAdminError"] as string;
+    string ApprovalLabel(string? status) => status switch
+    {
+        "Approved" => "Đã duyệt",
+        "Rejected" => "Từ chối",
+        _ => "Chờ duyệt"
+    };
+    string ApprovalClass(string? status) => status switch
+    {
+        "Approved" => "bg-success",
+        "Rejected" => "bg-danger",
+        _ => "bg-warning text-dark"
+    };
 }
 
 <div class="container-fluid py-3">
@@ -26,6 +39,16 @@
             <a href="/AccountAdmin/Buyers" class="btn @(!isSeller ? "btn-success" : "btn-outline-success") rounded-pill px-4">Người mua</a>
         </div>
     </div>
+
+    @if (isSeller)
+    {
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="/AccountAdmin/Sellers" class="btn btn-sm @(statusFilter == "All" ? "btn-success" : "btn-outline-success") rounded-pill px-3">Tất cả</a>
+            <a href="/AccountAdmin/Sellers?status=Pending" class="btn btn-sm @(statusFilter == "Pending" ? "btn-success" : "btn-outline-success") rounded-pill px-3">Chờ duyệt</a>
+            <a href="/AccountAdmin/Sellers?status=Approved" class="btn btn-sm @(statusFilter == "Approved" ? "btn-success" : "btn-outline-success") rounded-pill px-3">Đã duyệt</a>
+            <a href="/AccountAdmin/Sellers?status=Rejected" class="btn btn-sm @(statusFilter == "Rejected" ? "btn-success" : "btn-outline-success") rounded-pill px-3">Từ chối</a>
+        </div>
+    }
 
     @if (!string.IsNullOrWhiteSpace(message))
     {
@@ -73,6 +96,7 @@
                         <th>Liên hệ</th>
                         @if (isSeller)
                         {
+                            <th style="width:130px;">Trạng thái</th>
                             <th>Ngân hàng</th>
                             <th class="text-center" style="width:120px;">Sản phẩm</th>
                         }
@@ -90,7 +114,7 @@
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">Chưa có tài khoản.</td>
+                            <td colspan="9" class="text-center py-5 text-muted">Chưa có tài khoản.</td>
                         </tr>
                     }
                     else
@@ -111,6 +135,9 @@
                                 @if (isSeller)
                                 {
                                     <td>
+                                        <span class="badge @ApprovalClass(row.SellerApprovalStatus)">@ApprovalLabel(row.SellerApprovalStatus)</span>
+                                    </td>
+                                    <td>
                                         <div>@(string.IsNullOrWhiteSpace(user.BankName) ? "Chưa cấu hình" : user.BankName)</div>
                                         <div class="text-muted small">@user.BankAccountNumber</div>
                                     </td>
@@ -125,6 +152,18 @@
                                 <td>@user.CreatedDate?.ToString("dd/MM/yyyy")</td>
                                 <td class="text-end">
                                     <a href="/AccountAdmin/Details/@user.UserId?returnTo=@returnTo" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Chi tiết</a>
+                                    @if (isSeller && !string.Equals(row.SellerApprovalStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <form method="post" action="/AccountAdmin/ApproveSeller/@user.UserId" class="d-inline">
+                                            <input type="hidden" name="returnTo" value="@returnTo" />
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">Duyệt</button>
+                                        </form>
+                                        <form method="post" action="/AccountAdmin/RejectSeller/@user.UserId" class="d-inline">
+                                            <input type="hidden" name="returnTo" value="@returnTo" />
+                                            <input type="text" name="reason" class="form-control form-control-sm d-inline-block" style="width:180px;" placeholder="Lý do từ chối" />
+                                            <button type="submit" class="btn btn-sm btn-warning rounded-pill px-3">Từ chối</button>
+                                        </form>
+                                    }
                                     <form method="post" action="/AccountAdmin/Delete/@user.UserId" class="d-inline" data-confirm="Bạn có chắc chắn muốn xóa tài khoản này?">
                                         <input type="hidden" name="returnTo" value="@returnTo" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Xóa</button>

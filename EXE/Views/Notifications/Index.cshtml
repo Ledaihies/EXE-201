@@ -1,0 +1,55 @@
+@model IEnumerable<EXE.Models.Notification>
+
+@{
+    ViewData["Title"] = "Thông báo";
+    var unreadCount = (int?)ViewBag.UnreadCount ?? Model.Count(n => !n.IsRead);
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-1">Thông báo</h1>
+            <div class="text-muted">Bạn có @unreadCount thông báo chưa đọc.</div>
+        </div>
+        <form method="post" action="/Notifications/MarkAllAsRead">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-primary">Đánh dấu tất cả đã đọc</button>
+        </form>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="list-group list-group-flush">
+            @if (!Model.Any())
+            {
+                <div class="p-4 text-center text-muted">Chưa có thông báo nào.</div>
+            }
+            else
+            {
+                foreach (var item in Model)
+                {
+                    <div class="list-group-item d-flex justify-content-between align-items-start gap-3 @(item.IsRead ? string.Empty : "bg-light")">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-secondary">@item.Type</span>
+                                @if (!item.IsRead)
+                                {
+                                    <span class="badge bg-primary">Chưa đọc</span>
+                                }
+                            </div>
+                            <div class="fw-semibold">@item.Title</div>
+                            <div class="text-muted">@item.Message</div>
+                            <div class="small text-muted mt-1">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                        @if (!item.IsRead)
+                        {
+                            <form method="post" action="/Notifications/MarkAsRead/@item.NotificationId">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Đã đọc</button>
+                            </form>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

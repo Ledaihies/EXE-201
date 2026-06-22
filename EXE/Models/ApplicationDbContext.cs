@@ -31,6 +31,10 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<ContactMessage> ContactMessages { get; set; }
 
+    public virtual DbSet<CODCollection> CODCollections { get; set; }
+
+    public virtual DbSet<Notification> Notifications { get; set; }
+
     public virtual DbSet<Order> Orders { get; set; }
 
     public virtual DbSet<OrderItem> OrderItems { get; set; }
@@ -42,6 +46,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<OrderVoucher> OrderVouchers { get; set; }
 
     public virtual DbSet<OrderReturnRequest> OrderReturnRequests { get; set; }
+
+    public virtual DbSet<OrderSettlement> OrderSettlements { get; set; }
 
     public virtual DbSet<Payment> Payments { get; set; }
 
@@ -59,6 +65,10 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<ShippingMethod> ShippingMethods { get; set; }
 
+    public virtual DbSet<SellerPayout> SellerPayouts { get; set; }
+
+    public virtual DbSet<SellerPayoutItem> SellerPayoutItems { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<Voucher> Vouchers { get; set; }
@@ -70,6 +80,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<WalletTransaction> WalletTransactions { get; set; }
 
     public virtual DbSet<WalletTopUpRequest> WalletTopUpRequests { get; set; }
+
+    public virtual DbSet<WebsiteVisit> WebsiteVisits { get; set; }
 
     // Occasions/ProductOccasions đã được gỡ khỏi runtime (không dùng bảng DB tương ứng).
 
@@ -102,6 +114,19 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.BankAccountId);
             entity.Property(e => e.UpdatedDate).HasDefaultValueSql("(getdate())");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.NotificationId);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.IsRead).HasDefaultValue(false);
+            entity.Property(e => e.Type).HasDefaultValue("System");
+            entity.HasIndex(e => new { e.UserId, e.IsRead, e.CreatedAt });
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.Notifications)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AdvertisingPaymentRequest>(entity =>
@@ -146,6 +171,16 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.MessageId).HasName("PK__ContactM__C87C0C9C7CED8B3E");
 
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
+        });
+
+        modelBuilder.Entity<CODCollection>(entity =>
+        {
+            entity.HasKey(e => e.CODCollectionId);
+            entity.HasIndex(e => e.OrderId).IsUnique();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Status).HasDefaultValue("PendingCollection");
+            entity.HasOne(d => d.Order).WithOne(p => p.CODCollection).HasForeignKey<CODCollection>(d => d.OrderId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.ConfirmedByAdmin).WithMany().HasForeignKey(d => d.ConfirmedByAdminId).OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<Order>(entity =>
@@ -199,6 +234,26 @@ public partial class ApplicationDbContext : DbContext
             entity.HasOne(d => d.Order).WithMany(p => p.ReturnRequests).HasForeignKey(d => d.OrderId);
             entity.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.NoAction);
             entity.HasOne(d => d.SellerConfirmedByUser).WithMany().HasForeignKey(d => d.SellerConfirmedByUserId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.SellerApprovalStatus).HasDefaultValue("Approved");
+            entity.HasOne(d => d.SellerApprovedByAdmin)
+                .WithMany(p => p.SellerApprovedUsers)
+                .HasForeignKey(d => d.SellerApprovedByAdminId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<OrderSettlement>(entity =>
+        {
+            entity.HasKey(e => e.OrderSettlementId);
+            entity.HasIndex(e => new { e.OrderId, e.SellerId }).IsUnique();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.PaymentMethod).HasDefaultValue("COD");
+            entity.Property(e => e.SettlementStatus).HasDefaultValue("NotReady");
+            entity.HasOne(d => d.Order).WithMany(p => p.OrderSettlements).HasForeignKey(d => d.OrderId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.Seller).WithMany().HasForeignKey(d => d.SellerId).OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<Payment>(entity =>
@@ -264,6 +319,24 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.ShippingMethodId).HasName("PK__Shipping__0C7833A48128C00B");
         });
 
+        modelBuilder.Entity<SellerPayout>(entity =>
+        {
+            entity.HasKey(e => e.SellerPayoutId);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Status).HasDefaultValue("Pending");
+            entity.HasOne(d => d.Seller).WithMany().HasForeignKey(d => d.SellerId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(d => d.CreatedByAdmin).WithMany().HasForeignKey(d => d.CreatedByAdminId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<SellerPayoutItem>(entity =>
+        {
+            entity.HasKey(e => e.SellerPayoutItemId);
+            entity.HasIndex(e => e.OrderSettlementId).IsUnique();
+            entity.HasOne(d => d.SellerPayout).WithMany(p => p.SellerPayoutItems).HasForeignKey(d => d.SellerPayoutId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.OrderSettlement).WithMany(p => p.SellerPayoutItems).HasForeignKey(d => d.OrderSettlementId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(d => d.Order).WithMany(p => p.SellerPayoutItems).HasForeignKey(d => d.OrderId).OnDelete(DeleteBehavior.NoAction);
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4C504E6613");
@@ -294,6 +367,15 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Status).HasDefaultValue("Pending");
             entity.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WebsiteVisit>(entity =>
+        {
+            entity.HasKey(e => e.WebsiteVisitId);
+            entity.Property(e => e.VisitDate).HasColumnType("date");
+            entity.Property(e => e.VisitedAt).HasDefaultValueSql("(getdate())");
+            entity.HasIndex(e => new { e.VisitDate, e.VisitorKey }).IsUnique();
+            entity.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Voucher>(entity =>

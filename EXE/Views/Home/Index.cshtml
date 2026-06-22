@@ -169,6 +169,24 @@
 		font-size: .92rem;
 	}
 
+	.nv-entry-banner__product-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	.nv-entry-banner__add-cart {
+		flex: 0 0 auto;
+		min-height: 32px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		white-space: nowrap;
+	}
+
 	.nv-entry-banner__pagination {
 		display: flex;
 		align-items: center;
@@ -251,6 +269,15 @@
 			height: 104px;
 		}
 
+		.nv-entry-banner__product-actions {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.nv-entry-banner__add-cart {
+			width: 100%;
+		}
+
 		.nv-entry-banner__footer {
 			padding: 10px 12px 12px 12px;
 		}
@@ -283,6 +310,7 @@
 					@foreach (var p in (Model.AdvertisedProducts ?? Enumerable.Empty<EXE.Models.Product>()).Take(10))
 					{
 						var img = p.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+						var isOutOfStock = p.Stock.HasValue && p.Stock.Value <= 0;
 						<div class="nv-entry-banner__item nv-entry-banner__product-item">
 							<a href="/Product/Details/@p.ProductId">
 								<div class="nv-entry-banner__thumb">
@@ -290,9 +318,26 @@
 								</div>
 								<div class="nv-entry-banner__item-body">
 									<p class="nv-entry-banner__name">@p.ProductName</p>
-									<p class="nv-entry-banner__price">@String.Format("{0:N0}", p.Price ?? 0) đ</p>
 								</div>
 							</a>
+							<div class="nv-entry-banner__item-body pt-0">
+								<div class="nv-entry-banner__product-actions">
+									<p class="nv-entry-banner__price">@String.Format("{0:N0}", p.Price ?? 0) đ</p>
+									@if (isOutOfStock)
+									{
+										<button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 nv-entry-banner__add-cart" disabled>
+											Hết hàng
+										</button>
+									}
+									else
+									{
+										<a href="/Cart/Add/@p.ProductId" class="btn btn-sm btn-primary rounded-pill px-3 nv-entry-banner__add-cart" title="Thêm vào giỏ">
+											<i class="fa fa-cart-plus"></i>
+											<span>Thêm giỏ</span>
+										</a>
+									}
+								</div>
+							</div>
 						</div>
 					}
 					</div>
@@ -589,7 +634,7 @@
 @if (Model.ActiveVouchers != null && Model.ActiveVouchers.Any())
 {
 	<!-- Banner voucher dịp khuyến mãi -->
-	<section class="py-4 py-md-5" style="background: #f97316;" id="voucherSection">
+	<section class="py-4 py-md-5 nv-voucher-section" id="voucherSection">
 		<div class="container">
 			<div class="text-center mb-4">
 				<span class="text-light text-uppercase small fw-semibold" style="letter-spacing:.16em;">
@@ -1240,14 +1285,12 @@
 							fillColor: '#0d6efd',
 							fillOpacity: 0.12
 						}).addTo(map);
+					}
 
-						try {
-							map.fitBounds(accuracyCircle.getBounds(), { padding: [24, 24], maxZoom: 16 });
-						} catch (_) {
-							map.setView([lat, lng], 13);
-						}
-					} else {
-						map.setView([lat, lng], 13);
+					try {
+						map.flyTo([lat, lng], 16, { animate: true, duration: 0.45 });
+					} catch (_) {
+						map.setView([lat, lng], 16);
 					}
 				}
 
@@ -1432,7 +1475,7 @@
 
 						if (lat && lng) {
 							setUserMarker(lat, lng, null, location || 'Vị trí (ước lượng)');
-							map.setView([lat, lng], 10);
+							map.setView([lat, lng], 16);
 						}
 
 						if (lat && lng) {

@@ -2,7 +2,14 @@
 @using EXE.Models
 @{
 	ViewData["Title"] = Model.ProductName + " | Nguồn Việt";
-	var image = Model.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+	var productImages = (Model.ProductImages != null && Model.ProductImages.Any())
+		? Model.ProductImages.Select(x => x.ImageUrl).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).ToList()
+		: new List<string>();
+	if (!productImages.Any())
+	{
+		productImages.Add("no-image.svg");
+	}
+	var image = productImages.First();
 	var regionName = Model.Region?.RegionName ?? "Đặc sản vùng miền";
 	var related = ViewBag.RelatedProducts as List<Product> ?? new List<Product>();
 	var reviews = ViewBag.Reviews as List<Review> ?? new List<Review>();
@@ -11,6 +18,47 @@
 	var stock = Model.Stock ?? 0;
 	var inStock = stock > 0;
 }
+
+<style>
+	.nv-product-gallery-main {
+		aspect-ratio: 1 / 1;
+		max-height: 420px;
+		object-fit: cover;
+	}
+
+	.nv-product-gallery-thumbs {
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 10px;
+		margin-top: 12px;
+	}
+
+	.nv-product-gallery-thumb {
+		aspect-ratio: 1 / 1;
+		padding: 0;
+		border: 2px solid transparent;
+		border-radius: 10px;
+		overflow: hidden;
+		background: #fff;
+	}
+
+	.nv-product-gallery-thumb.is-active {
+		border-color: #0f7f3f;
+	}
+
+	.nv-product-gallery-thumb img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	@@media (max-width: 575.98px) {
+		.nv-product-gallery-thumbs {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+</style>
 
 <!-- Page header -->
 <div class="container-fluid page-header py-5">
@@ -27,11 +75,28 @@
 		<div class="col-lg-5">
 			<div class="border rounded-4 overflow-hidden shadow-sm bg-white">
 				<img src="~/img/@image"
-					 class="img-fluid w-100"
-					 style="max-height:420px; object-fit:cover"
+					 class="img-fluid w-100 nv-product-gallery-main"
+					 id="productMainImage"
 					 alt="@Model.ProductName"
 					 onerror="this.onerror=null;this.src='/img/no-image.svg';" />
 			</div>
+			@if (productImages.Count > 1)
+			{
+				<div class="nv-product-gallery-thumbs" aria-label="Ảnh sản phẩm">
+					@for (var i = 0; i < productImages.Count; i++)
+					{
+						var thumb = productImages[i];
+						<button type="button"
+								class="nv-product-gallery-thumb @(i == 0 ? "is-active" : "")"
+								data-product-image="/img/@thumb"
+								aria-label="Xem ảnh @(i + 1)">
+							<img src="~/img/@thumb"
+								 alt="@Model.ProductName ảnh @(i + 1)"
+								 onerror="this.onerror=null;this.src='/img/no-image.svg';" />
+						</button>
+					}
+				</div>
+			}
 		</div>
 
 		<div class="col-lg-7">
@@ -244,3 +309,23 @@
 		</div>
 	</div>
 </section>
+
+<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		var mainImage = document.getElementById('productMainImage');
+		if (!mainImage) return;
+
+		document.querySelectorAll('.nv-product-gallery-thumb').forEach(function (button) {
+			button.addEventListener('click', function () {
+				var nextImage = button.getAttribute('data-product-image');
+				if (!nextImage) return;
+
+				mainImage.src = nextImage;
+				document.querySelectorAll('.nv-product-gallery-thumb').forEach(function (item) {
+					item.classList.remove('is-active');
+				});
+				button.classList.add('is-active');
+			});
+		});
+	});
+</script>

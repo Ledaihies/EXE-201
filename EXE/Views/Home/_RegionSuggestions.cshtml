@@ -51,7 +51,6 @@
 					{
 						var item = products[i];
 						var image = item.ProductImages.FirstOrDefault()?.ImageUrl ?? "no-image.svg";
-						var regionName = item.Region?.RegionName ?? "Dac san";
 
 						<div class="col" data-nearby-product-item data-nearby-index="@i">
 							<div class="nv-product-mini card border-0 shadow-sm h-100">
@@ -59,7 +58,6 @@
 									<div class="col-5 col-md-4 col-xl-3">
 										<div class="nv-thumb nv-thumb--compact h-100">
 											<img src="~/img/@image" class="img-fluid" alt="@item.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
-											<div class="nv-region-pill nv-region-pill--compact">@regionName</div>
 										</div>
 									</div>
 									<div class="col-7 col-md-8 col-xl-9">

@@ -1,17 +1,26 @@
-using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using EXE.Models;
-using Microsoft.EntityFrameworkCore;
 using EXE.Security;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EXE.Controllers
 {
     public class AuthController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public AuthController(ApplicationDbContext context)
+        public AuthController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         public IActionResult Login()
@@ -20,13 +29,13 @@ namespace EXE.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(string email, string password)
+        public async Task<IActionResult> Login(string email, string password)
         {
             email = (email ?? string.Empty).Trim();
 
-            var user = _context.Users
+            var user = await _context.Users
                 .Include(u => u.Role)
-                .FirstOrDefault(x => x.Email == email);
+                .FirstOrDefaultAsync(x => x.Email == email);
 
             if (user != null && PasswordHasher.Verify(password, user.PasswordHash))
             {
@@ -34,36 +43,48 @@ namespace EXE.Controllers
                 if (user.RoleId.HasValue) HttpContext.Session.SetInt32("RoleId", user.RoleId.Value);
                 HttpContext.Session.SetString("FullName", user.FullName ?? user.Email ?? "User");
 
-                var roleName = (user.Role?.RoleName ?? string.Empty).Trim();
+                var roleName = RoleAccess.Normalize(user.Role?.RoleName);
                 if (string.IsNullOrWhiteSpace(roleName) && user.RoleId.HasValue)
                 {
-                    roleName = (_context.Roles.AsNoTracking()
+                    roleName = RoleAccess.Normalize(await _context.Roles.AsNoTracking()
                         .Where(r => r.RoleId == user.RoleId.Value)
                         .Select(r => r.RoleName)
-                        .FirstOrDefault() ?? string.Empty).Trim();
+                        .FirstOrDefaultAsync());
                 }
 
                 HttpContext.Session.SetString("RoleName", roleName);
 
-                // Điều hướng theo vai trò
-                if (string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase))
+                if (RoleAccess.IsRole(roleName, RoleAccess.Admin))
                 {
                     return RedirectToAction("Index", "Admin");
                 }
-                if (string.Equals(roleName, "Staff", StringComparison.OrdinalIgnoreCase))
+
+                if (RoleAccess.IsRole(roleName, RoleAccess.Staff))
                 {
                     return RedirectToAction("Index", "Staff");
                 }
-                if (string.Equals(roleName, "Seller", StringComparison.OrdinalIgnoreCase))
+
+                if (RoleAccess.IsRole(roleName, RoleAccess.Seller))
                 {
-                    return RedirectToAction("Index", "Seller");
+                    var approvalStatus = await _context.Users
+                        .AsNoTracking()
+                        .Where(u => u.UserId == user.UserId)
+                        .Select(u => u.SellerApprovalStatus)
+                        .FirstOrDefaultAsync();
+
+                    if (string.Equals(approvalStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return RedirectToAction("Index", "Seller");
+                    }
+
+                    TempData["SellerMessage"] = GetSellerAccessMessage(approvalStatus);
+                    return RedirectToAction("Index", "Home");
                 }
 
                 return RedirectToAction("Index", "Home");
             }
 
             ViewBag.Error = "Login Failed";
-
             return View();
         }
 
@@ -96,7 +117,13 @@ namespace EXE.Controllers
                 FullName = fullName,
                 Email = email,
                 PasswordHash = PasswordHasher.Hash(password),
-                RoleId = await _context.Roles.Where(r => r.RoleName == "User").Select(r => (int?)r.RoleId).FirstOrDefaultAsync(),
+                RoleId = await _context.Roles
+                    .Where(r => r.RoleName != null &&
+                                (r.RoleName.Trim().ToLower() == "user" ||
+                                 r.RoleName.Trim().ToLower() == "buyer" ||
+                                 r.RoleName.Trim().ToLower() == "customer"))
+                    .Select(r => (int?)r.RoleId)
+                    .FirstOrDefaultAsync(),
                 CreatedDate = DateTime.Now
             };
 
@@ -111,7 +138,16 @@ namespace EXE.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> RegisterSeller(string shopName, string ownerName, string email, string phone, string address, string password, string confirmPassword)
+        public async Task<IActionResult> RegisterSeller(
+            string shopName,
+            string ownerName,
+            string email,
+            string phone,
+            string address,
+            string password,
+            string confirmPassword,
+            IFormFile? licenseImageFile,
+            IFormFile? originProofImageFile)
         {
             email = (email ?? string.Empty).Trim();
             shopName = (shopName ?? string.Empty).Trim();
@@ -139,8 +175,18 @@ namespace EXE.Controllers
                 return View("Login");
             }
 
+            if (!IsAllowedImageFile(licenseImageFile) || !IsAllowedImageFile(originProofImageFile))
+            {
+                ViewBag.Error = "Vui lòng tải lên ảnh giấy phép kinh doanh và ảnh chứng minh nguồn gốc hợp lệ.";
+                return View("Login");
+            }
+
             var sellerRoleId = await _context.Roles
-                .Where(r => r.RoleName == "Seller")
+                .Where(r => r.RoleName != null &&
+                            (r.RoleName.Trim().ToLower() == "seller" ||
+                             r.RoleName.Trim().ToLower() == "nguoi ban" ||
+                             r.RoleName.Trim().ToLower() == "người bán" ||
+                             r.RoleName.Trim().ToLower() == "shop"))
                 .Select(r => (int?)r.RoleId)
                 .FirstOrDefaultAsync();
 
@@ -152,6 +198,14 @@ namespace EXE.Controllers
                 sellerRoleId = role.RoleId;
             }
 
+            var licenseImageUrl = await SaveUploadedImage(licenseImageFile);
+            var originProofImageUrl = await SaveUploadedImage(originProofImageFile);
+            if (string.IsNullOrWhiteSpace(licenseImageUrl) || string.IsNullOrWhiteSpace(originProofImageUrl))
+            {
+                ViewBag.Error = "Không thể lưu ảnh giấy phép hoặc ảnh chứng minh nguồn gốc. Vui lòng thử lại.";
+                return View("Login");
+            }
+
             var user = new User
             {
                 FullName = shopName,
@@ -160,6 +214,9 @@ namespace EXE.Controllers
                 Address = $"Chủ shop: {ownerName}; Địa chỉ lấy hàng: {address}",
                 PasswordHash = PasswordHasher.Hash(password),
                 RoleId = sellerRoleId.Value,
+                SellerApprovalStatus = "Pending",
+                SellerLicenseImageUrl = licenseImageUrl,
+                SellerOriginProofImageUrl = originProofImageUrl,
                 CreatedDate = DateTime.Now
             };
 
@@ -170,17 +227,62 @@ namespace EXE.Controllers
             HttpContext.Session.SetInt32("RoleId", sellerRoleId.Value);
             HttpContext.Session.SetString("RoleName", "Seller");
             HttpContext.Session.SetString("FullName", user.FullName ?? user.Email ?? "Seller");
+            TempData["SellerMessage"] = "Tài khoản người bán của bạn đang chờ Admin xác nhận. Bạn chưa thể đăng sản phẩm.";
 
-            return RedirectToAction("Index", "Seller");
+            return RedirectToAction("Index", "Home");
         }
 
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-
             return RedirectToAction("Index", "Home");
         }
 
-        // Referral chương trình đã được gỡ bỏ, nên không sinh mã giới thiệu nữa.
+        private async Task<string?> SaveUploadedImage(IFormFile? imageFile)
+        {
+            if (imageFile == null || imageFile.Length <= 0) return null;
+
+            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".jpg", ".jpeg", ".png", ".gif", ".webp"
+            };
+
+            var ext = Path.GetExtension(imageFile.FileName);
+            if (!allowed.Contains(ext)) return null;
+
+            var path = Path.Combine(_env.WebRootPath, "img");
+            Directory.CreateDirectory(path);
+
+            var fileName = $"{Guid.NewGuid():N}{ext}";
+            var fullPath = Path.Combine(path, fileName);
+            await using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(stream);
+            }
+
+            return fileName;
+        }
+
+        private static bool IsAllowedImageFile(IFormFile? file)
+        {
+            if (file == null || file.Length <= 0) return false;
+
+            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".jpg", ".jpeg", ".png", ".gif", ".webp"
+            };
+
+            return allowed.Contains(Path.GetExtension(file.FileName));
+        }
+
+        private static string GetSellerAccessMessage(string? approvalStatus)
+        {
+            if (string.Equals(approvalStatus, "Rejected", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Tài khoản người bán của bạn đã bị từ chối. Vui lòng liên hệ Admin để biết lý do.";
+            }
+
+            return "Tài khoản người bán của bạn đang chờ Admin xác nhận. Bạn chưa thể đăng sản phẩm.";
+        }
     }
 }

@@ -18,13 +18,16 @@ public sealed class SellerOnlyAttribute : Attribute, IAsyncActionFilter
             return;
         }
 
+        var sessionRole = RoleAccess.Normalize(http.Session.GetString("RoleName"));
+        if (RoleAccess.IsAnyRole(sessionRole, RoleAccess.Seller, RoleAccess.Admin))
+        {
+            await next();
+            return;
+        }
+
         var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
-        var isSellerOrAdmin = await db.Users
-            .AsNoTracking()
-            .Include(u => u.Role)
-            .AnyAsync(u => u.UserId == userId.Value &&
-                           u.Role != null &&
-                           (u.Role.RoleName == "Seller" || u.Role.RoleName == "Admin"));
+        var roleName = await RoleAccess.GetRoleNameAsync(http, db, userId.Value);
+        var isSellerOrAdmin = RoleAccess.IsAnyRole(roleName, RoleAccess.Seller, RoleAccess.Admin);
 
         if (!isSellerOrAdmin)
         {

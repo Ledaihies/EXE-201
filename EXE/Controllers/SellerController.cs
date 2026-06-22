@@ -1,4 +1,5 @@
-using EXE.Models;
+﻿using EXE.Models;
+using EXE.Security;
 using EXE.Services;
 using EXE.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,7 @@ public class SellerController : Controller
     private readonly IGHNService _ghnService;
     private readonly IWalletService _walletService;
     private readonly ISePayTransactionLookupService _sePayLookupService;
+    private readonly INotificationService _notificationService;
     private static readonly List<AdvertisingPackageOption> AdvertisingPackages = new()
     {
         new("none", "Không quảng cáo", "Sản phẩm chỉ hiển thị trên sàn bình thường.", 0m, 0),
@@ -36,7 +38,8 @@ public class SellerController : Controller
         IInvoicePdfService invoicePdfService,
         IGHNService ghnService,
         IWalletService walletService,
-        ISePayTransactionLookupService sePayLookupService)
+        ISePayTransactionLookupService sePayLookupService,
+        INotificationService notificationService)
     {
         _context = context;
         _env = env;
@@ -46,13 +49,46 @@ public class SellerController : Controller
         _ghnService = ghnService;
         _walletService = walletService;
         _sePayLookupService = sePayLookupService;
+        _notificationService = notificationService;
     }
 
     public async Task<IActionResult> Index()
     {
-        if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
+        if (!EnsureSellerRoleAccess(out var accessResult)) return accessResult!;
 
         var sellerId = CurrentUserId();
+        var sellerApprovalStatus = await _context.Users
+            .Where(u => u.UserId == sellerId)
+            .Select(u => new
+            {
+                u.SellerApprovalStatus,
+                u.FullName,
+                u.Email,
+                u.Phone,
+                u.Address,
+                u.SellerLicenseImageUrl,
+                u.SellerOriginProofImageUrl,
+                u.SellerRejectReason
+            })
+            .FirstOrDefaultAsync();
+
+        var approvalStatus = sellerApprovalStatus?.SellerApprovalStatus ?? "Pending";
+        ViewBag.SellerApprovalStatus = approvalStatus;
+        ViewBag.SellerDisplayName = sellerApprovalStatus?.FullName ?? string.Empty;
+        ViewBag.SellerEmail = sellerApprovalStatus?.Email ?? string.Empty;
+        ViewBag.SellerPhone = sellerApprovalStatus?.Phone ?? string.Empty;
+        ViewBag.SellerAddress = sellerApprovalStatus?.Address ?? string.Empty;
+        ViewBag.SellerLicenseImageUrl = sellerApprovalStatus?.SellerLicenseImageUrl ?? string.Empty;
+        ViewBag.SellerOriginProofImageUrl = sellerApprovalStatus?.SellerOriginProofImageUrl ?? string.Empty;
+        ViewBag.SellerRejectReason = sellerApprovalStatus?.SellerRejectReason ?? string.Empty;
+
+        if (!string.Equals(approvalStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+        {
+            ViewBag.IsSellerApproved = false;
+            return View("ApplicationStatus");
+        }
+
+        ViewBag.IsSellerApproved = true;
         var products = await SellerProducts(sellerId)
             .Include(p => p.ProductImages)
             .Include(p => p.Category)
@@ -143,7 +179,7 @@ public class SellerController : Controller
     [HttpPost]
     public async Task<IActionResult> UpdateBankAccount(string? bankName, string? bankAccountNumber, string? bankAccountName, string? bankBranch)
     {
-        if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
+        if (!EnsureSellerRoleAccess(out var accessResult)) return accessResult!;
 
         bankName = bankName?.Trim();
         bankAccountNumber = bankAccountNumber?.Trim();
@@ -154,13 +190,13 @@ public class SellerController : Controller
             string.IsNullOrWhiteSpace(bankAccountNumber) ||
             string.IsNullOrWhiteSpace(bankAccountName))
         {
-            TempData["SellerMessage"] = "Vui long nhap day du ten ngan hang, so tai khoan va ten chu tai khoan.";
+            TempData["SellerMessage"] = "Vui lòng nhập đầy đủ tên ngân hàng, số tài khoản và tên chủ tài khoản.";
             return RedirectToAction(nameof(Index));
         }
 
         if (bankName.Length > 120 || bankAccountNumber.Length > 50 || bankAccountName.Length > 150 || (bankBranch?.Length ?? 0) > 150)
         {
-            TempData["SellerMessage"] = "Thong tin tai khoan ngan hang vuot qua do dai cho phep.";
+            TempData["SellerMessage"] = "Thông tin tài khoản ngân hàng vượt quá độ dài cho phép.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -174,26 +210,130 @@ public class SellerController : Controller
         seller.BankUpdatedDate = DateTime.Now;
         await _context.SaveChangesAsync();
 
-        TempData["SellerMessage"] = "Da cap nhat tai khoan ngan hang de admin chuyen tien.";
+        TempData["SellerMessage"] = "Đã cập nhật tài khoản ngân hàng để admin chuyển tiền.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ResubmitApplication(
+        string shopName,
+        string ownerName,
+        string email,
+        string phone,
+        string address,
+        string password,
+        string confirmPassword,
+        IFormFile? licenseImageFile,
+        IFormFile? originProofImageFile)
+    {
+        if (!EnsureSellerRoleAccess(out var accessResult)) return accessResult!;
+
+        var sellerId = CurrentUserId();
+        var seller = await _context.Users.FirstOrDefaultAsync(u => u.UserId == sellerId);
+        if (seller == null) return NotFound();
+
+        shopName = (shopName ?? string.Empty).Trim();
+        ownerName = (ownerName ?? string.Empty).Trim();
+        email = (email ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(shopName) ||
+            string.IsNullOrWhiteSpace(ownerName) ||
+            string.IsNullOrWhiteSpace(email))
+        {
+            TempData["SellerMessage"] = "Vui lòng nhập đầy đủ thông tin để gửi duyệt lại.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (!IsAllowedImageFile(licenseImageFile) || !IsAllowedImageFile(originProofImageFile))
+        {
+            TempData["SellerMessage"] = "Vui lòng tải lại ảnh giấy phép kinh doanh và ảnh chứng minh nguồn gốc hợp lệ.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var duplicateEmail = await _context.Users.AnyAsync(u => u.UserId != sellerId && u.Email == email);
+        if (duplicateEmail)
+        {
+            TempData["SellerMessage"] = "Email này đã được sử dụng bởi tài khoản khác.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        seller.FullName = shopName;
+        seller.Email = email;
+        seller.Phone = phone;
+        seller.Address = $"Chủ shop: {ownerName}; Địa chỉ lấy hàng: {address}";
+        seller.SellerLicenseImageUrl = await SaveUploadedImage(licenseImageFile);
+        seller.SellerOriginProofImageUrl = await SaveUploadedImage(originProofImageFile);
+        seller.SellerApprovalStatus = "Pending";
+        seller.SellerApprovedAt = null;
+        seller.SellerApprovedByAdminId = null;
+        seller.SellerRejectReason = null;
+        seller.CreatedDate ??= DateTime.Now;
+
+        if (!string.IsNullOrWhiteSpace(password))
+        {
+            if (password != confirmPassword)
+            {
+                TempData["SellerMessage"] = "Mật khẩu xác nhận không khớp.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            seller.PasswordHash = EXE.Security.PasswordHasher.Hash(password);
+        }
+
+        await _context.SaveChangesAsync();
+
+        HttpContext.Session.SetString("FullName", seller.FullName ?? seller.Email ?? "Seller");
+        TempData["SellerMessage"] = "Đã gửi lại hồ sơ người bán. Vui lòng chờ Admin duyệt lại.";
         return RedirectToAction(nameof(Index));
     }
 
     public async Task<IActionResult> Create()
     {
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
+        if (!EnsureApprovedSeller(out var approvalResult)) return approvalResult!;
 
         await LoadCatalogOptions();
         return View(new Product());
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(Product input, IFormFile? imageFile, IFormFile? originProofFile, string? advertisingPackageCode)
+    public async Task<IActionResult> Create(Product input, List<IFormFile>? imageFiles, IFormFile? originProofFile, string? advertisingPackageCode)
     {
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
+        if (!EnsureApprovedSeller(out var approvalResult)) return approvalResult!;
 
-        if (string.IsNullOrWhiteSpace(input.ProductName) || !input.Price.HasValue || input.Price < 0)
+        if (string.IsNullOrWhiteSpace(input.ProductName) ||
+            !input.Price.HasValue ||
+            input.Price < 0 ||
+            !input.Stock.HasValue ||
+            input.Stock < 0 ||
+            !input.CategoryId.HasValue ||
+            !input.RegionId.HasValue)
         {
-            ViewBag.Error = "Vui lòng nhập tên sản phẩm và giá hợp lệ.";
+            ViewBag.Error = "Vui lòng nhập đủ tên, giá, tồn kho, danh mục và vùng miền hợp lệ.";
+            await LoadCatalogOptions();
+            return View(input);
+        }
+
+        if (imageFiles == null || imageFiles.Count == 0)
+        {
+            ViewBag.Error = "Vui lòng tải lên ít nhất một ảnh sản phẩm.";
+            await LoadCatalogOptions();
+            return View(input);
+        }
+
+        if (imageFiles.Any(f => !IsAllowedImageFile(f)))
+        {
+            ViewBag.Error = "Tất cả ảnh sản phẩm phải là file hợp lệ (.jpg, .png, .gif, .webp).";
+            await LoadCatalogOptions();
+            return View(input);
+        }
+
+        var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == input.CategoryId.Value);
+        var regionExists = await _context.Regions.AnyAsync(r => r.RegionId == input.RegionId.Value);
+        if (!categoryExists || !regionExists)
+        {
+            ViewBag.Error = "Danh mục hoặc vùng miền không hợp lệ.";
             await LoadCatalogOptions();
             return View(input);
         }
@@ -237,19 +377,28 @@ public class SellerController : Controller
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
-        await SaveProductImage(product.ProductId, imageFile);
+        await SaveProductImages(product.ProductId, imageFiles);
+        await _notificationService.CreateNotificationForRole(
+            RoleAccess.Admin,
+            "Sản phẩm mới cần kiểm tra",
+            $"Người bán vừa tạo sản phẩm #{product.ProductId} - {product.ProductName}.",
+            "Product",
+            "Product",
+            product.ProductId);
         if (adPackage.Price > 0)
         {
             var request = await CreateAdvertisingPaymentRequest(product.ProductId, CurrentUserId(), adPackage);
             return RedirectToAction(nameof(AdvertisingPayment), new { id = request.RequestId });
         }
-        TempData["SellerMessage"] = "Đã gửi sản phẩm cho admin duyệt. Sản phẩm sẽ lên sàn sau khi được phê duyệt.";
+
+        TempData["SellerMessage"] = "Đã gửi sản phẩm cho Admin duyệt. Sản phẩm sẽ hiển thị trên sàn sau khi được duyệt.";
         return RedirectToAction(nameof(Index));
     }
 
     public async Task<IActionResult> Edit(int id)
     {
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
+        if (!EnsureApprovedSeller(out var approvalResult)) return approvalResult!;
 
         var sellerId = CurrentUserId();
         var product = await SellerProducts(sellerId)
@@ -263,9 +412,10 @@ public class SellerController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Edit(Product input, IFormFile? imageFile, IFormFile? originProofFile, string? advertisingPackageCode)
+    public async Task<IActionResult> Edit(Product input, List<IFormFile>? imageFiles, IFormFile? originProofFile, string? advertisingPackageCode)
     {
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
+        if (!EnsureApprovedSeller(out var approvalResult)) return approvalResult!;
 
         var sellerId = CurrentUserId();
         var product = await SellerProducts(sellerId)
@@ -276,7 +426,30 @@ public class SellerController : Controller
 
         if (string.IsNullOrWhiteSpace(input.ProductName) || !input.Price.HasValue || input.Price < 0)
         {
-            ViewBag.Error = "Vui lòng nhập tên sản phẩm và giá hợp lệ.";
+            ViewBag.Error = "Vui lòng nhập tên và giá hợp lệ.";
+            await LoadCatalogOptions();
+            return View(product);
+        }
+
+        if (!input.Stock.HasValue || input.Stock < 0 || !input.CategoryId.HasValue || !input.RegionId.HasValue)
+        {
+            ViewBag.Error = "Vui lòng chọn danh mục, vùng miền và tồn kho hợp lệ.";
+            await LoadCatalogOptions();
+            return View(product);
+        }
+
+        var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == input.CategoryId.Value);
+        var regionExists = await _context.Regions.AnyAsync(r => r.RegionId == input.RegionId.Value);
+        if (!categoryExists || !regionExists)
+        {
+            ViewBag.Error = "Danh mục hoặc vùng miền không hợp lệ.";
+            await LoadCatalogOptions();
+            return View(product);
+        }
+
+        if (imageFiles != null && imageFiles.Count > 0 && imageFiles.Any(f => !IsAllowedImageFile(f)))
+        {
+            ViewBag.Error = "Tất cả ảnh sản phẩm phải là file hợp lệ (.jpg, .png, .gif, .webp).";
             await LoadCatalogOptions();
             return View(product);
         }
@@ -292,7 +465,7 @@ public class SellerController : Controller
         if (adPackage.Price > 0)
         {
             var request = await CreateAdvertisingPaymentRequest(product.ProductId, sellerId, adPackage);
-            await SaveProductImage(product.ProductId, imageFile);
+            await SaveProductImages(product.ProductId, imageFiles);
             if (originProofFile != null && originProofFile.Length > 0)
             {
                 product.OriginProofImageUrl = await SaveUploadedImage(originProofFile);
@@ -310,14 +483,22 @@ public class SellerController : Controller
             product.AdvertisingEndDate = null;
         }
 
-        await SaveProductImage(product.ProductId, imageFile);
+        await SaveProductImages(product.ProductId, imageFiles);
         if (originProofFile != null && originProofFile.Length > 0)
         {
             product.OriginProofImageUrl = await SaveUploadedImage(originProofFile);
         }
         await _context.SaveChangesAsync();
 
-        TempData["SellerMessage"] = "Đã cập nhật sản phẩm và gửi lại cho admin duyệt.";
+        await _notificationService.CreateNotificationForRole(
+            RoleAccess.Admin,
+            "Sản phẩm đã cập nhật",
+            $"Người bán vừa cập nhật sản phẩm #{product.ProductId} - {product.ProductName}.",
+            "Product",
+            "Product",
+            product.ProductId);
+
+        TempData["SellerMessage"] = "Đã cập nhật sản phẩm và gửi Admin duyệt lại. Sản phẩm sẽ hiển thị trên sàn sau khi được duyệt.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -326,11 +507,11 @@ public class SellerController : Controller
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
 
         var sellerId = CurrentUserId();
-        var roleName = HttpContext.Session.GetString("RoleName") ?? string.Empty;
+        var roleName = RoleAccess.GetRoleName(HttpContext, _context, sellerId);
         var request = await _context.AdvertisingPaymentRequests
             .Include(r => r.Product)
             .FirstOrDefaultAsync(r => r.RequestId == id &&
-                                      (r.SellerId == sellerId || string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase)));
+                                      (r.SellerId == sellerId || RoleAccess.IsRole(roleName, RoleAccess.Admin)));
 
         if (request == null) return NotFound();
 
@@ -350,12 +531,12 @@ public class SellerController : Controller
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
 
         var sellerId = CurrentUserId();
-        var roleName = HttpContext.Session.GetString("RoleName") ?? string.Empty;
+        var roleName = RoleAccess.GetRoleName(HttpContext, _context, sellerId);
         var request = await _context.AdvertisingPaymentRequests
             .Include(r => r.Product)
             .FirstOrDefaultAsync(r =>
                 r.RequestId == id &&
-                (r.SellerId == sellerId || string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase)));
+                (r.SellerId == sellerId || RoleAccess.IsRole(roleName, RoleAccess.Admin)));
         if (request == null) return NotFound();
 
         var isPaid = string.Equals(request.Status, "Paid", StringComparison.OrdinalIgnoreCase);
@@ -385,6 +566,7 @@ public class SellerController : Controller
     public async Task<IActionResult> Delete(int id)
     {
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
+        if (!EnsureApprovedSeller(out var approvalResult)) return approvalResult!;
 
         var sellerId = CurrentUserId();
         var product = await SellerProducts(sellerId).FirstOrDefaultAsync(p => p.ProductId == id);
@@ -402,6 +584,16 @@ public class SellerController : Controller
                 product.AdvertisingPaidDate = null;
                 product.AdvertisingEndDate = null;
                 await _context.SaveChangesAsync();
+                if (product.SellerId.HasValue)
+                {
+                    await _notificationService.CreateNotification(
+                        product.SellerId.Value,
+                        "Sản phẩm đã bị ẩn",
+                        $"Sản phẩm #{product.ProductId} đã được ẩn do còn dữ liệu liên quan.",
+                        "Product",
+                        "Product",
+                        product.ProductId);
+                }
                 TempData["SellerMessage"] = "Đã ẩn sản phẩm khỏi gian hàng. Sản phẩm có đơn hàng nên không xóa cứng khỏi dữ liệu.";
                 return RedirectToAction(nameof(Index));
             }
@@ -417,6 +609,23 @@ public class SellerController : Controller
             _context.Reviews.RemoveRange(reviews);
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
+            if (product.SellerId.HasValue)
+            {
+                await _notificationService.CreateNotification(
+                    product.SellerId.Value,
+                    "Sản phẩm đã bị xóa",
+                    $"Sản phẩm #{product.ProductId} của bạn đã bị xóa khỏi hệ thống.",
+                    "Product",
+                    "Product",
+                    product.ProductId);
+            }
+            await _notificationService.CreateNotificationForRole(
+                RoleAccess.Admin,
+                "Sản phẩm đã bị xóa",
+                $"Sản phẩm #{product.ProductId} đã bị xóa khỏi hệ thống.",
+                "Product",
+                "Product",
+                product.ProductId);
             TempData["SellerMessage"] = "Đã xóa sản phẩm.";
         }
 
@@ -467,8 +676,8 @@ public class SellerController : Controller
         if (!EnsureSellerAccess(out var accessResult)) return accessResult!;
 
         var sellerId = CurrentUserId();
-        var roleName = HttpContext.Session.GetString("RoleName") ?? string.Empty;
-        var isAdmin = string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase);
+        var roleName = RoleAccess.GetRoleName(HttpContext, _context, sellerId);
+        var isAdmin = RoleAccess.IsRole(roleName, RoleAccess.Admin);
 
         var order = await _context.Orders
             .Include(o => o.User)
@@ -504,7 +713,9 @@ public class SellerController : Controller
         var sellerId = CurrentUserId();
         var order = await _context.Orders
             .Include(o => o.Status)
+            .Include(o => o.CODCollection)
             .Include(o => o.ReturnRequests)
+            .Include(o => o.OrderSettlements)
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
             .FirstOrDefaultAsync(o => o.OrderId == id &&
@@ -518,7 +729,7 @@ public class SellerController : Controller
 
         if (request == null || !string.Equals(order.Status?.StatusName, "Cho xac nhan hoan hang", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["SellerMessage"] = "Don hang khong co yeu cau hoan hang dang cho xac nhan.";
+            TempData["SellerMessage"] = "Đơn hàng không có yêu cầu hoàn hàng đang chờ xác nhận.";
             return RedirectToAction(nameof(Orders));
         }
 
@@ -528,6 +739,15 @@ public class SellerController : Controller
         request.RefundedDate = DateTime.Now;
         request.RefundAmount = order.TotalAmount ?? request.RefundAmount;
         order.StatusId = await GetStatusIdAsync("Da hoan tien");
+        order.PaymentStatus = "Refunded";
+        if (order.CODCollection != null)
+        {
+            order.CODCollection.Status = "Cancelled";
+        }
+        foreach (var settlement in order.OrderSettlements)
+        {
+            settlement.SettlementStatus = "Refunded";
+        }
         if (order.UserId.HasValue && request.RefundAmount > 0)
         {
             await _walletService.CreditAsync(order.UserId.Value, request.RefundAmount, "Refund", $"Hoàn tiền đơn #{order.OrderId}", order.OrderId);
@@ -551,7 +771,7 @@ public class SellerController : Controller
         }
 
         await _context.SaveChangesAsync();
-        TempData["SellerMessage"] = "Da xac nhan hoan hang va ghi nhan hoan tien cho nguoi mua.";
+        TempData["SellerMessage"] = "Đã xác nhận hoàn hàng và ghi nhận hoàn tiền cho người mua.";
         return RedirectToAction(nameof(Orders));
     }
 
@@ -576,7 +796,7 @@ public class SellerController : Controller
 
         if (request == null)
         {
-            TempData["SellerMessage"] = "Don hang khong co yeu cau hoan hang dang cho xac nhan.";
+            TempData["SellerMessage"] = "Đơn hàng không có yêu cầu hoàn hàng đang chờ xác nhận.";
             return RedirectToAction(nameof(Orders));
         }
 
@@ -586,7 +806,7 @@ public class SellerController : Controller
         order.StatusId = await GetStatusIdAsync("Da nhan hang");
 
         await _context.SaveChangesAsync();
-        TempData["SellerMessage"] = "Da tu choi yeu cau hoan hang.";
+        TempData["SellerMessage"] = "Đã từ chối yêu cầu hoàn hàng.";
         return RedirectToAction(nameof(Orders));
     }
 
@@ -596,6 +816,7 @@ public class SellerController : Controller
         var order = await _context.Orders
             .Include(o => o.User)
             .Include(o => o.Status)
+            .Include(o => o.CODCollection)
             .Include(o => o.OrderShippings)
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
@@ -624,6 +845,10 @@ public class SellerController : Controller
         }
 
         order.StatusId = await GetStatusIdAsync(nextStatus);
+        if (order.CODCollection != null && string.Equals(nextStatus, "Cho giao hang", StringComparison.OrdinalIgnoreCase))
+        {
+            order.CODCollection.Status = "CashInTransit";
+        }
         await _context.SaveChangesAsync();
 
         if (string.Equals(nextStatus, "Cho giao hang", StringComparison.OrdinalIgnoreCase))
@@ -692,7 +917,7 @@ public class SellerController : Controller
         var toWardCode = order.ToWardCode?.Trim() ?? "";
         if (toDistrictId <= 0 || string.IsNullOrWhiteSpace(toWardCode))
         {
-            TempData["SellerMessage"] = "Khong the goi GHN: don hang thieu ma quan/huyen hoac phuong/xa GHN cua nguoi nhan.";
+            TempData["SellerMessage"] = "Không thể gọi GHN: đơn hàng thiếu mã quận/huyện hoặc phường/xã GHN của người nhận.";
             return RedirectToAction(nameof(Orders));
         }
 
@@ -701,7 +926,7 @@ public class SellerController : Controller
         var receiverAddress = order.ShippingAddress?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(receiverPhone) || string.IsNullOrWhiteSpace(receiverAddress))
         {
-            TempData["SellerMessage"] = "Khong the goi GHN: don hang thieu ten, so dien thoai hoac dia chi nguoi nhan.";
+            TempData["SellerMessage"] = "Không thể gọi GHN: đơn hàng thiếu tên, số điện thoại hoặc địa chỉ người nhận.";
             return RedirectToAction(nameof(Orders));
         }
 
@@ -726,7 +951,7 @@ public class SellerController : Controller
 
         if (!ghnResult.Success || string.IsNullOrWhiteSpace(ghnResult.OrderCode))
         {
-            TempData["SellerMessage"] = "GHN chua tao duoc van don: " + (ghnResult.Message ?? "Loi khong xac dinh.");
+            TempData["SellerMessage"] = "GHN chưa tạo được vận đơn: " + (ghnResult.Message ?? "Lỗi không xác định.");
             return RedirectToAction(nameof(Orders));
         }
 
@@ -746,12 +971,7 @@ public class SellerController : Controller
         return values.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))?.Trim() ?? "";
     }
 
-    private int CurrentUserId()
-    {
-        return HttpContext.Session.GetInt32("UserId") ?? 0;
-    }
-
-    private bool EnsureSellerAccess(out IActionResult? result)
+    private bool EnsureSellerRoleAccess(out IActionResult? result)
     {
         result = null;
         var userId = HttpContext.Session.GetInt32("UserId");
@@ -761,9 +981,8 @@ public class SellerController : Controller
             return false;
         }
 
-        var roleName = HttpContext.Session.GetString("RoleName") ?? string.Empty;
-        if (string.Equals(roleName, "Seller", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase))
+        var roleName = RoleAccess.GetRoleName(HttpContext, _context, userId.Value);
+        if (RoleAccess.IsRole(roleName, RoleAccess.Admin) || RoleAccess.IsRole(roleName, RoleAccess.Seller))
         {
             return true;
         }
@@ -773,13 +992,49 @@ public class SellerController : Controller
         return false;
     }
 
+    private int CurrentUserId()
+    {
+        return HttpContext.Session.GetInt32("UserId") ?? 0;
+    }
+
+    private bool EnsureSellerAccess(out IActionResult? result)
+    {
+        result = null;
+        if (!EnsureSellerRoleAccess(out result)) return false;
+
+        var userId = CurrentUserId();
+        var roleName = RoleAccess.GetRoleName(HttpContext, _context, userId);
+        if (RoleAccess.IsRole(roleName, RoleAccess.Admin))
+        {
+            return true;
+        }
+
+        var sellerStatus = _context.Users
+            .AsNoTracking()
+            .Where(u => u.UserId == userId)
+            .Select(u => u.SellerApprovalStatus)
+            .FirstOrDefault();
+
+        if (string.Equals(sellerStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        TempData["SellerMessage"] = string.Equals(sellerStatus, "Rejected", StringComparison.OrdinalIgnoreCase)
+            ? "Tài khoản người bán của bạn đã bị từ chối. Vui lòng gửi lại hồ sơ để admin duyệt lại."
+            : "Tài khoản người bán của bạn đang chờ Admin xác nhận. Bạn chưa thể đăng sản phẩm.";
+        result = RedirectToAction(nameof(Index));
+        return false;
+    }
+
+    private bool EnsureApprovedSeller(out IActionResult? result)
+    {
+        return EnsureSellerAccess(out result);
+    }
+
     private IQueryable<Product> SellerProducts(int sellerId)
     {
-        var roleName = HttpContext.Session.GetString("RoleName") ?? string.Empty;
-        var query = _context.Products.Where(p => p.ApprovalStatus != "Deleted");
-        return string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase)
-            ? query
-            : query.Where(p => p.SellerId == sellerId);
+        return _context.Products.Where(p => p.ApprovalStatus != "Deleted" && p.SellerId == sellerId);
     }
 
     private async Task LoadCatalogOptions()
@@ -892,18 +1147,25 @@ public class SellerController : Controller
         return method.ShippingMethodId;
     }
 
-    private async Task SaveProductImage(int productId, IFormFile? imageFile)
+    private async Task SaveProductImages(int productId, IEnumerable<IFormFile>? imageFiles)
     {
-        if (imageFile == null || imageFile.Length <= 0) return;
+        if (imageFiles == null) return;
 
-        var fileName = await SaveUploadedImage(imageFile);
-        if (string.IsNullOrWhiteSpace(fileName)) return;
+        var imageList = imageFiles.Where(x => x != null && x.Length > 0).ToList();
+        if (imageList.Count == 0) return;
 
-        _context.ProductImages.Add(new ProductImage
+        foreach (var imageFile in imageList)
         {
-            ProductId = productId,
-            ImageUrl = fileName
-        });
+            var fileName = await SaveUploadedImage(imageFile);
+            if (string.IsNullOrWhiteSpace(fileName)) continue;
+
+            _context.ProductImages.Add(new ProductImage
+            {
+                ProductId = productId,
+                ImageUrl = fileName
+            });
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -930,4 +1192,17 @@ public class SellerController : Controller
 
         return fileName;
     }
+
+    private static bool IsAllowedImageFile(IFormFile? file)
+    {
+        if (file == null || file.Length <= 0) return false;
+
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".gif", ".webp"
+        };
+
+        return allowed.Contains(Path.GetExtension(file.FileName));
+    }
 }
+

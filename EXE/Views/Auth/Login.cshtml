@@ -105,7 +105,7 @@
 							<span class="badge bg-primary rounded-pill px-3 py-2">Seller</span>
 						</div>
 
-						<form method="post" action="/Auth/RegisterSeller">
+						<form method="post" action="/Auth/RegisterSeller" enctype="multipart/form-data">
 							<div class="row g-3">
 								<div class="col-md-6">
 									<label class="form-label">Tên shop</label>
@@ -135,6 +135,17 @@
 									<label class="form-label">Xác nhận mật khẩu</label>
 									<input type="password" name="confirmPassword" class="form-control" required>
 								</div>
+								<div class="col-md-6">
+									<label class="form-label">Ảnh giấy phép kinh doanh</label>
+									<input type="file" name="licenseImageFile" class="form-control" accept="image/*" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label">Ảnh chứng minh nguồn gốc xuất xứ</label>
+									<input type="file" name="originProofImageFile" class="form-control" accept="image/*" required>
+								</div>
+							</div>
+							<div class="mt-3 small text-muted">
+								Hệ thống sẽ lưu 2 ảnh này để admin kiểm tra trước khi duyệt gian hàng.
 							</div>
 							<button type="submit" class="btn btn-primary w-100 py-3 mt-4 rounded-pill">
 								<i class="fas fa-store me-2"></i>Tạo gian hàng

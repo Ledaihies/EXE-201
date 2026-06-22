@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using EXE.Models;
+using EXE.Security;
 using Microsoft.EntityFrameworkCore;
 using EXE.ViewModels;
 using EXE.Services;
@@ -14,6 +15,7 @@ namespace EXE.Controllers
         private readonly IGHNService _ghnService;
         private readonly IWalletService _walletService;
         private readonly ISePayTransactionLookupService _sePayLookupService;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<CheckoutController> _logger;
 
         public CheckoutController(
@@ -22,6 +24,7 @@ namespace EXE.Controllers
             IGHNService ghnService,
             IWalletService walletService,
             ISePayTransactionLookupService sePayLookupService,
+            INotificationService notificationService,
             ILogger<CheckoutController> logger)
         {
             _context = context;
@@ -29,6 +32,7 @@ namespace EXE.Controllers
             _ghnService = ghnService;
             _walletService = walletService;
             _sePayLookupService = sePayLookupService;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -294,7 +298,13 @@ namespace EXE.Controllers
             return await CreateOrderFromCart(input, payWithWallet: true);
         }
 
-        private async Task<IActionResult> CreateOrderFromCart(CheckoutViewModel input, bool payWithWallet)
+        [HttpPost]
+        public async Task<IActionResult> PayWithCOD(CheckoutViewModel input)
+        {
+            return await CreateOrderFromCart(input, payWithWallet: false, payWithCOD: true);
+        }
+
+        private async Task<IActionResult> CreateOrderFromCart(CheckoutViewModel input, bool payWithWallet, bool payWithCOD = false)
         {
             var cartId = await GetOrCreateCartIdAsync();
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -378,11 +388,12 @@ namespace EXE.Controllers
 
             var fullAddress = input.ShippingAddress?.Trim() ?? "";
 
-            var initialStatus = payWithWallet ? "Cho nguoi ban xac nhan" : "Cho thanh toan";
+            var initialStatus = (payWithWallet || payWithCOD) ? "Cho nguoi ban xac nhan" : "Cho thanh toan";
             var order = new Order
             {
                 UserId = userId,
                 StatusId = await GetStatusIdAsync(initialStatus),
+                PaymentStatus = payWithCOD ? "PendingCODCollection" : payWithWallet ? "Paid" : "PendingOnlinePayment",
                 ShippingAddress = fullAddress,
                 ReceiverName = input.ContactName?.Trim(),
                 ReceiverPhone = input.ContactPhone?.Trim(),
@@ -417,6 +428,12 @@ namespace EXE.Controllers
             if (appliedVoucher != null)
                 _context.OrderVouchers.Add(new OrderVoucher { OrderId = order.OrderId, VoucherId = appliedVoucher.VoucherId });
 
+            var sellerIds = items
+                .Where(i => i.Product?.SellerId.HasValue == true)
+                .Select(i => i.Product!.SellerId!.Value)
+                .Distinct()
+                .ToList();
+
             if (payWithWallet && userId.HasValue)
             {
                 var wallet = await _context.Wallets.FirstAsync(w => w.UserId == userId.Value);
@@ -442,14 +459,71 @@ namespace EXE.Controllers
                     PaymentDate = DateTime.Now
                 });
             }
+            else if (payWithCOD)
+            {
+                var codMethodId = await GetPaymentMethodIdAsync("COD");
+                _context.Payments.Add(new Payment
+                {
+                    OrderId = order.OrderId,
+                    PaymentMethodId = codMethodId,
+                    Amount = 0,
+                    PaymentDate = null
+                });
+
+                _context.CODCollections.Add(new CODCollection
+                {
+                    OrderId = order.OrderId,
+                    Amount = total,
+                    Status = "PendingCollection",
+                    CreatedAt = DateTime.Now
+                });
+            }
 
             await _context.SaveChangesAsync();
+
+            if (userId.HasValue)
+            {
+                await _notificationService.CreateNotification(
+                    userId.Value,
+                    "Đặt hàng thành công",
+                    $"Đơn hàng #{order.OrderId} của bạn đã được tạo thành công.",
+                    "Order",
+                    "Order",
+                    order.OrderId);
+            }
+
+            await _notificationService.CreateNotificationForRole(
+                RoleAccess.Admin,
+                "Đơn hàng mới",
+                $"Có đơn hàng mới #{order.OrderId} cần xử lý.",
+                "Order",
+                "Order",
+                order.OrderId);
+
+            foreach (var sellerId in sellerIds)
+            {
+                await _notificationService.CreateNotification(
+                    sellerId,
+                    "Có đơn hàng mới",
+                    $"Có đơn hàng mới #{order.OrderId} chứa sản phẩm của shop bạn.",
+                    "Order",
+                    "Order",
+                    order.OrderId);
+            }
 
             if (payWithWallet)
             {
                 _context.CartItems.RemoveRange(items);
                 await _context.SaveChangesAsync();
                 TempData["OrderMessage"] = "Đã thanh toán đơn hàng bằng ví.";
+                return RedirectToAction("OrderDetails", "Account", new { id = order.OrderId });
+            }
+
+            if (payWithCOD)
+            {
+                _context.CartItems.RemoveRange(items);
+                await _context.SaveChangesAsync();
+                TempData["OrderMessage"] = "Đã đặt hàng COD. Vui lòng thanh toán tiền mặt khi nhận hàng.";
                 return RedirectToAction("OrderDetails", "Account", new { id = order.OrderId });
             }
 
@@ -616,8 +690,45 @@ namespace EXE.Controllers
                 });
             }
 
+            order.PaymentStatus = "Paid";
             order.StatusId = await GetStatusIdAsync("Cho nguoi ban xac nhan");
             await _context.SaveChangesAsync();
+
+            var sellerIds = await _context.OrderItems
+                .Where(oi => oi.OrderId == order.OrderId && oi.Product != null && oi.Product.SellerId.HasValue)
+                .Select(oi => oi.Product.SellerId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            if (order.UserId.HasValue)
+            {
+                await _notificationService.CreateNotification(
+                    order.UserId.Value,
+                    "Thanh toán thành công",
+                    $"Thanh toán online cho đơn hàng #{order.OrderId} đã được xác nhận.",
+                    "Payment",
+                    "Order",
+                    order.OrderId);
+            }
+
+            await _notificationService.CreateNotificationForRole(
+                RoleAccess.Admin,
+                "Thanh toán online thành công",
+                $"Đơn hàng #{order.OrderId} đã thanh toán thành công.",
+                "Payment",
+                "Order",
+                order.OrderId);
+
+            foreach (var sellerId in sellerIds)
+            {
+                await _notificationService.CreateNotification(
+                    sellerId,
+                    "Đơn hàng đã thanh toán",
+                    $"Đơn hàng #{order.OrderId} chứa sản phẩm của shop bạn đã thanh toán thành công.",
+                    "Payment",
+                    "Order",
+                    order.OrderId);
+            }
 
             return true;
         }

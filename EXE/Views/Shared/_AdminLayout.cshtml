@@ -1,4 +1,4 @@
-@{
+﻿@{
 	var title = ViewData["Title"] as string ?? "Quản trị - Nguồn Việt";
 }
 <!DOCTYPE html>
@@ -267,7 +267,7 @@
 			align-items: center;
 			justify-content: center;
 			background: #fee2e2;
-			color: #dc2626;
+			color: #0f7f3f;
 			font-size: 1.1rem;
 		}
 
@@ -371,9 +371,6 @@
 					<div class="admin-topbar-sub">Quản trị hệ thống Nguồn Việt</div>
 				</div>
 				<div class="admin-topbar-actions">
-					<a href="/ProductAdmin/Create" class="btn btn-sm btn-success rounded-pill px-3">
-						<i class="fas fa-plus me-1"></i> Thêm sản phẩm
-					</a>
 					<a href="/" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
 						<i class="fas fa-external-link-alt me-1"></i> Xem website
 					</a>
@@ -455,3 +452,4 @@
 	@RenderSection("Scripts", required: false)
 </body>
 </html>
+

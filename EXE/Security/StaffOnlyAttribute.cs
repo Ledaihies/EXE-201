@@ -19,12 +19,8 @@ public sealed class StaffOnlyAttribute : Attribute, IAsyncActionFilter
         }
 
         var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
-        var isStaffOrAdmin = await db.Users
-            .AsNoTracking()
-            .Include(u => u.Role)
-            .AnyAsync(u => u.UserId == userId.Value &&
-                           u.Role != null &&
-                           (u.Role.RoleName == "Staff" || u.Role.RoleName == "Admin"));
+        var roleName = await RoleAccess.GetRoleNameAsync(http, db, userId.Value);
+        var isStaffOrAdmin = RoleAccess.IsAnyRole(roleName, RoleAccess.Staff, RoleAccess.Admin);
 
         if (!isStaffOrAdmin)
         {

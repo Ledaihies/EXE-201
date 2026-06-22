@@ -21,6 +21,9 @@ public partial class Order
     [Column(TypeName = "decimal(10, 2)")]
     public decimal? ShippingFee { get; set; }
 
+    [StringLength(50)]
+    public string? PaymentStatus { get; set; }
+
     [Column(TypeName = "datetime")]
     public DateTime? OrderDate { get; set; }
 
@@ -55,6 +58,15 @@ public partial class Order
 
     [InverseProperty("Order")]
     public virtual ICollection<OrderReturnRequest> ReturnRequests { get; set; } = new List<OrderReturnRequest>();
+
+    [InverseProperty("Order")]
+    public virtual ICollection<OrderSettlement> OrderSettlements { get; set; } = new List<OrderSettlement>();
+
+    [InverseProperty("Order")]
+    public virtual ICollection<SellerPayoutItem> SellerPayoutItems { get; set; } = new List<SellerPayoutItem>();
+
+    [InverseProperty("Order")]
+    public virtual CODCollection? CODCollection { get; set; }
 
     [ForeignKey("StatusId")]
     [InverseProperty("Orders")]

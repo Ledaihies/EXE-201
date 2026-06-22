@@ -99,12 +99,12 @@
         <div class="seller-card p-3 mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
-                    <h2 class="h5 mb-1">Tai khoan ngan hang nhan tien</h2>
+                    <h2 class="h5 mb-1">Tài khoản ngân hàng nhận tiền</h2>
                     <div class="text-muted small">
-                        Admin se dung thong tin nay de chuyen tien cho nguoi ban.
+                        Admin sẽ dùng thông tin này để chuyển tiền cho người bán.
                         @if (sellerBankUpdatedDate.HasValue)
                         {
-                            <span>Cap nhat lan cuoi: @sellerBankUpdatedDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                            <span>Cập nhật lần cuối: @sellerBankUpdatedDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
                         }
                     </div>
                 </div>
@@ -112,24 +112,24 @@
             <form method="post" action="/Seller/UpdateBankAccount">
                 <div class="seller-bank-grid">
                     <div>
-                        <label class="form-label small text-muted mb-1">Ten ngan hang</label>
+                        <label class="form-label small text-muted mb-1">Tên ngân hàng</label>
                         <input name="bankName" value="@sellerBankName" maxlength="120" class="form-control" required />
                     </div>
                     <div>
-                        <label class="form-label small text-muted mb-1">So tai khoan</label>
+                        <label class="form-label small text-muted mb-1">Số tài khoản</label>
                         <input name="bankAccountNumber" value="@sellerBankAccountNumber" maxlength="50" class="form-control" required />
                     </div>
                     <div>
-                        <label class="form-label small text-muted mb-1">Ten chu tai khoan</label>
+                        <label class="form-label small text-muted mb-1">Tên chủ tài khoản</label>
                         <input name="bankAccountName" value="@sellerBankAccountName" maxlength="150" class="form-control" required />
                     </div>
                     <div>
-                        <label class="form-label small text-muted mb-1">Chi nhanh / ghi chu</label>
+                        <label class="form-label small text-muted mb-1">Chi nhánh / ghi chú</label>
                         <input name="bankBranch" value="@sellerBankBranch" maxlength="150" class="form-control" />
                     </div>
                 </div>
                 <div class="mt-3">
-                    <button type="submit" class="btn btn-primary px-4">Luu tai khoan ngan hang</button>
+                    <button type="submit" class="btn btn-primary px-4">Lưu tài khoản ngân hàng</button>
                 </div>
             </form>
         </div>

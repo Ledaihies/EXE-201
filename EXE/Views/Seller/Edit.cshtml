@@ -2,149 +2,161 @@
 @using EXE.Controllers
 
 @{
-	ViewData["Title"] = "Sửa sản phẩm";
-	var categories = ViewBag.Categories as List<EXE.Models.Category> ?? new();
-	var regions = ViewBag.Regions as List<EXE.Models.Region> ?? new();
-	var adPackages = ViewBag.AdPackages as List<SellerController.AdvertisingPackageOption> ?? new();
-	var currentImage = Model.ProductImages?.OrderByDescending(x => x.ImageId).FirstOrDefault()?.ImageUrl ?? "no-image.svg";
+    ViewData["Title"] = "Sửa sản phẩm";
+    var categories = ViewBag.Categories as List<EXE.Models.Category> ?? new();
+    var regions = ViewBag.Regions as List<EXE.Models.Region> ?? new();
+    var adPackages = ViewBag.AdPackages as List<SellerController.AdvertisingPackageOption> ?? new();
+    var currentImage = Model.ProductImages?.OrderByDescending(x => x.ImageId).FirstOrDefault()?.ImageUrl ?? "no-image.svg";
 }
 
 <div class="container-fluid page-header py-5">
-	<h1 class="text-center text-white display-6">Sửa sản phẩm</h1>
+    <h1 class="text-center text-white display-6">Sửa sản phẩm</h1>
 </div>
 
 <div class="container-fluid py-5">
-	<div class="container">
-		<style>
-			.nv-form-card { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; background: #fff; box-shadow: 0 .125rem .35rem rgba(15,23,42,.06); }
-			.nv-form-card .form-control, .nv-form-card .form-select { border-radius: 8px; }
-			.nv-preview-box { border: 1px solid rgba(148,163,184,.35); border-radius: 8px; padding: 14px; background: #fff; }
-			.nv-preview-box img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; }
-			.nv-ad-note { border-radius: 8px; background: rgba(255,193,7,.1); border: 1px solid rgba(255,193,7,.35); }
-			.nv-qr-box { border-radius: 8px; background: #fff; border: 1px solid rgba(148,163,184,.35); padding: 12px; }
-			.nv-qr-img { width: 100%; max-width: 220px; aspect-ratio: 1; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px; background: #f8fafc; border: 1px solid rgba(148,163,184,.25); }
-			.nv-transfer-check { border-radius: 8px; background: rgba(25,135,84,.08); border: 1px solid rgba(25,135,84,.25); padding: 10px 12px; }
-		</style>
+    <div class="container">
+        @if (!string.IsNullOrWhiteSpace(ViewBag.Error))
+        {
+            <div class="alert alert-danger border-0 shadow-sm">@ViewBag.Error</div>
+        }
 
-		<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-			<div>
-				<div class="text-primary text-uppercase small fw-semibold">Cập nhật sản phẩm</div>
-				<h2 class="mb-1">@Model.ProductName</h2>
-				<p class="text-muted mb-0">Sau khi cập nhật, sản phẩm sẽ được gửi admin duyệt lại trước khi hiển thị.</p>
-			</div>
-			<a href="/Seller" class="btn btn-outline-secondary rounded-pill px-4">
-				<i class="fas fa-arrow-left me-2"></i>Quay lại
-			</a>
-		</div>
-
-		@if (!string.IsNullOrWhiteSpace(ViewBag.Error))
-		{
-			<div class="alert alert-danger border-0 shadow-sm">@ViewBag.Error</div>
-		}
-
-		<form method="post" enctype="multipart/form-data" class="nv-form-card p-4 p-md-5">
-			<input type="hidden" name="ProductId" value="@Model.ProductId">
-			<div class="row g-4">
-				<div class="col-lg-8">
-					<div class="mb-3">
-						<label class="form-label fw-semibold">Tên sản phẩm</label>
-						<input name="ProductName" value="@Model.ProductName" class="form-control" required>
-					</div>
-					<div class="mb-3">
-						<label class="form-label fw-semibold">Mô tả</label>
-						<textarea name="Description" class="form-control" rows="6">@Model.Description</textarea>
-					</div>
-					<div class="row g-3">
-						<div class="col-md-4">
-							<label class="form-label fw-semibold">Giá bán</label>
-							<input name="Price" type="number" min="0" step="1000" value="@(Model.Price ?? 0)" class="form-control" required>
-						</div>
-						<div class="col-md-4">
-							<label class="form-label fw-semibold">Tồn kho</label>
-							<input name="Stock" type="number" min="0" step="1" value="@(Model.Stock ?? 0)" class="form-control">
-						</div>
-						<div class="col-md-4">
-							<label class="form-label fw-semibold">Thêm ảnh sản phẩm</label>
-							<input type="file" name="imageFile" accept="image/*" class="form-control">
-						</div>
-					</div>
-					<div class="mt-3">
-						<label class="form-label fw-semibold">Cập nhật ảnh chứng minh nguồn gốc</label>
-						<input type="file" name="originProofFile" accept="image/*" class="form-control">
-						<div class="form-text">Chỉ cần tải lại nếu chứng từ nguồn gốc thay đổi hoặc admin yêu cầu bổ sung.</div>
-					</div>
-				</div>
-				<div class="col-lg-4">
-					<div class="mb-3">
-						<label class="form-label fw-semibold">Danh mục</label>
-						<select name="CategoryId" class="form-select">
-							<option value="">-- Chọn danh mục --</option>
-							@foreach (var c in categories)
-							{
-								<option value="@c.CategoryId" selected="@(c.CategoryId == Model.CategoryId)">@c.CategoryName</option>
-							}
-						</select>
-					</div>
-					<div class="mb-3">
-						<label class="form-label fw-semibold">Vùng miền</label>
-						<select name="RegionId" class="form-select">
-							<option value="">-- Chọn vùng --</option>
-							@foreach (var r in regions)
-							{
-								<option value="@r.RegionId" selected="@(r.RegionId == Model.RegionId)">@r.RegionName (@r.Province)</option>
-							}
-						</select>
-					</div>
-					<div class="nv-ad-note p-3 mb-3">
-						<div class="fw-semibold mb-2"><i class="fas fa-bullhorn me-2 text-warning"></i>Quảng cáo trang chủ</div>
-						<label class="form-label small fw-semibold">Chọn gói quảng cáo</label>
-						<select name="advertisingPackageCode" class="form-select js-ad-package">
-							@foreach (var package in adPackages)
-							{
-								<option value="@package.Code" data-price="@package.Price" selected="@(package.Code == (Model.AdvertisingPackageCode ?? "none"))">
-									@package.Name - @String.Format("{0:N0}", package.Price) đ@(package.Days > 0 ? $" / {package.Days} ngày" : "")
-								</option>
-							}
-						</select>
-						@if (Model.AdvertisingEndDate.HasValue)
-						{
-							<div class="form-text">Gói hiện tại hết hạn: @Model.AdvertisingEndDate.Value.ToString("dd/MM/yyyy HH:mm").</div>
-						}
-						else
-						{
-							<div class="form-text">Chọn gói có phí để sản phẩm xuất hiện ở các vị trí quảng cáo trang chủ sau khi được duyệt.</div>
-						}
-						<div class="small bg-white rounded border p-2 mt-3">
-							Sau khi cập nhật, hệ thống sẽ tạo mã VietQR riêng cho yêu cầu quảng cáo để người bán thanh toán.
-						</div>
-					</div>
-					<div class="nv-preview-box mb-3">
-						<div class="fw-semibold mb-2">Ảnh hiện tại</div>
-						<img src="~/img/@currentImage" alt="@Model.ProductName" onerror="this.onerror=null;this.src='/img/no-image.svg';">
-					</div>
-					@if (!string.IsNullOrWhiteSpace(Model.OriginProofImageUrl))
-					{
-						<div class="nv-preview-box">
-							<div class="fw-semibold mb-2">Chứng minh nguồn gốc</div>
-							<a href="/img/@Model.OriginProofImageUrl" target="_blank">
-								<img src="~/img/@Model.OriginProofImageUrl" alt="Chứng minh nguồn gốc">
-							</a>
-						</div>
-					}
-				</div>
-			</div>
-			<div class="d-flex justify-content-end mt-4">
-				<button type="submit" class="btn btn-primary rounded-pill px-5 py-2 js-submit-btn">
-					<i class="fas fa-save me-2"></i>Cập nhật và gửi duyệt
-				</button>
-			</div>
-		</form>
-	</div>
+        <form method="post" enctype="multipart/form-data" class="border rounded-3 bg-white p-4 p-md-5">
+            <input type="hidden" name="ProductId" value="@Model.ProductId">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên sản phẩm</label>
+                        <input name="ProductName" value="@Model.ProductName" class="form-control" required maxlength="200">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả</label>
+                        <textarea name="Description" class="form-control" rows="6">@Model.Description</textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Giá bán</label>
+                            <input name="Price" type="number" min="0" step="1000" value="@(Model.Price ?? 0)" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Tồn kho</label>
+                            <input name="Stock" type="number" min="0" step="1" value="@(Model.Stock ?? 0)" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Thêm ảnh sản phẩm</label>
+                            <div id="image-file-list" class="d-grid gap-2">
+                                <div class="input-group js-image-row">
+                                    <input type="file" name="imageFiles" accept="image/*" class="form-control js-image-input">
+                                    <button type="button" class="btn btn-outline-danger js-remove-image" disabled>Xóa</button>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="form-text js-image-count">Đã chọn 0 ảnh.</div>
+                                <button type="button" id="add-image-btn" class="btn btn-sm btn-outline-primary">Thêm ảnh</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold">Cập nhật ảnh chứng minh nguồn gốc</label>
+                        <input type="file" name="originProofFile" accept="image/*" class="form-control">
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Danh mục</label>
+                        <select name="CategoryId" class="form-select" required>
+                            <option value="">-- Chọn danh mục --</option>
+                            @foreach (var c in categories)
+                            {
+                                <option value="@c.CategoryId" selected="@(c.CategoryId == Model.CategoryId)">@c.CategoryName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vùng miền</label>
+                        <select name="RegionId" class="form-select" required>
+                            <option value="">-- Chọn vùng --</option>
+                            @foreach (var r in regions)
+                            {
+                                <option value="@r.RegionId" selected="@(r.RegionId == Model.RegionId)">@r.RegionName (@r.Province)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="border rounded-3 p-3 bg-light">
+                        <label class="form-label fw-semibold">Gói quảng cáo</label>
+                        <select name="advertisingPackageCode" class="form-select">
+                            @foreach (var package in adPackages)
+                            {
+                                <option value="@package.Code" data-price="@package.Price" selected="@(package.Code == (Model.AdvertisingPackageCode ?? "none"))">
+                                    @package.Name - @String.Format("{0:N0}", package.Price) đ@(package.Days > 0 ? $" / {package.Days} ngày" : "")
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="border rounded-3 bg-white p-3 mt-3">
+                        <div class="fw-semibold mb-2">Ảnh hiện tại</div>
+                        <img src="~/img/@currentImage" alt="@Model.ProductName" class="img-fluid rounded-3 w-100" style="max-height:220px;object-fit:cover;" onerror="this.onerror=null;this.src='/img/no-image.svg';">
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2">Cập nhật</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
-	document.addEventListener('DOMContentLoaded', function () {
-		const packageSelect = document.querySelector('.js-ad-package');
-		packageSelect?.addEventListener('change', function () {});
-	});
+    document.addEventListener('DOMContentLoaded', function () {
+        const list = document.getElementById('image-file-list');
+        const addBtn = document.getElementById('add-image-btn');
+        const countLabel = document.querySelector('.js-image-count');
+
+        if (!list || !addBtn || !countLabel) return;
+
+        const updateCount = () => {
+            const total = Array.from(list.querySelectorAll('.js-image-input'))
+                .filter(input => input.files && input.files.length > 0)
+                .length;
+            countLabel.textContent = `Đã chọn ${total} ảnh.`;
+        };
+
+        const syncRemoveButtons = () => {
+            const rows = Array.from(list.querySelectorAll('.js-image-row'));
+            rows.forEach((row) => {
+                const removeBtn = row.querySelector('.js-remove-image');
+                if (removeBtn) {
+                    removeBtn.disabled = rows.length === 1;
+                }
+            });
+        };
+
+        const wireRow = (row) => {
+            const input = row.querySelector('.js-image-input');
+            const removeBtn = row.querySelector('.js-remove-image');
+            input?.addEventListener('change', updateCount);
+            removeBtn?.addEventListener('click', () => {
+                if (list.querySelectorAll('.js-image-row').length === 1) return;
+                row.remove();
+                syncRemoveButtons();
+                updateCount();
+            });
+        };
+
+        addBtn.addEventListener('click', () => {
+            const row = document.createElement('div');
+            row.className = 'input-group js-image-row';
+            row.innerHTML = `
+                <input type="file" name="imageFiles" accept="image/*" class="form-control js-image-input">
+                <button type="button" class="btn btn-outline-danger js-remove-image">Xóa</button>
+            `;
+            list.appendChild(row);
+            wireRow(row);
+            syncRemoveButtons();
+            updateCount();
+        });
+
+        list.querySelectorAll('.js-image-row').forEach(wireRow);
+        syncRemoveButtons();
+        updateCount();
+    });
 </script>

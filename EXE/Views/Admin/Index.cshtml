@@ -5,6 +5,10 @@
     int categoryCount = ViewBag.CategoryCount ?? 0;
     int orderCount = ViewBag.OrderCount ?? 0;
     int userCount = ViewBag.UserCount ?? 0;
+    int totalVisits = ViewBag.TotalVisits ?? 0;
+    int todayVisits = ViewBag.TodayVisits ?? 0;
+    int uniqueVisitors = ViewBag.UniqueVisitors ?? 0;
+    int productViews = ViewBag.ProductViews ?? 0;
     string chartLabelsJson = ViewBag.ChartLabelsJson ?? "[]";
     string trafficDataJson = ViewBag.TrafficDataJson ?? "[]";
     string revenueDataJson = ViewBag.RevenueDataJson ?? "[]";
@@ -57,6 +61,41 @@
     </div>
 
     <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Tổng lượt truy cập</div>
+                    <div class="h3 mb-0">@totalVisits</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Lượt truy cập hôm nay</div>
+                    <div class="h3 mb-0">@todayVisits</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Khách truy cập duy nhất</div>
+                    <div class="h3 mb-0">@uniqueVisitors</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Lượt xem sản phẩm</div>
+                    <div class="h3 mb-0">@productViews</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
@@ -67,7 +106,7 @@
                         </span>
                     </div>
                     <p class="text-muted small mb-3">
-                        Số lượt truy cập (ước lượng theo hoạt động đơn hàng) theo từng ngày.
+                        Số lượt truy cập thật theo từng ngày, không tính AJAX hay route nội bộ.
                     </p>
                     <canvas id="trafficChart" style="max-height: 260px;"></canvas>
                 </div>

@@ -87,6 +87,10 @@
 								var price = item.Price ?? 0;
 								var status = item.Order?.Status?.StatusName ?? "Cho nguoi ban xac nhan";
 								var latestReturn = item.Order?.ReturnRequests.OrderByDescending(r => r.CreatedDate).FirstOrDefault();
+								if (status == "Cho xac nhan hoan hang")
+								{
+									status = StatusLabel(status);
+								}
 								var tracking = item.Order?.OrderShippings.OrderByDescending(s => s.ShippingDate).FirstOrDefault()?.TrackingNumber;
 								<tr>
 									<td class="fw-bold">#@item.OrderId</td>
@@ -120,12 +124,12 @@
 										{
 											<form method="post" action="/Seller/ConfirmOrder/@item.OrderId" class="d-inline">
 												<input type="hidden" name="shippingChoice" value="pickup" />
-												<span class="small me-1">GHN den lay</span>
+												<span class="small me-1">GHN đến lấy</span>
 												<button class="btn btn-sm btn-success rounded-pill px-3" type="submit">Xác nhận</button>
 											</form>
 											<form method="post" action="/Seller/ConfirmOrder/@item.OrderId" class="d-inline">
 												<input type="hidden" name="shippingChoice" value="dropoff" />
-												<button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="submit">Tu mang di gui</button>
+												<button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="submit">Tự mang đi gửi</button>
 											</form>
 										}
 										else if (status == "Cho lay hang")
@@ -134,7 +138,7 @@
 												<button class="btn btn-sm btn-primary rounded-pill px-3" type="submit">Đã giao vận chuyển</button>
 											</form>
 										}
-										else if (status == "Cho xac nhan hoan hang" && latestReturn?.Status == "Pending")
+										else if (status == "Chờ xác nhận hoàn hàng" && latestReturn?.Status == "Pending")
 										{
 											<div class="text-start small mb-2">
 												<div class="fw-semibold">Lý do hoàn hàng</div>

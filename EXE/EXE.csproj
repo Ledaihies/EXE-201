@@ -17,4 +17,9 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="*.dll;*.exe;*.pdb;*.deps.json;*.runtimeconfig.json;*.staticwebassets.endpoints.json;web.config" />
+    <None Remove="*.dll;*.exe;*.pdb;*.deps.json;*.runtimeconfig.json;*.staticwebassets.endpoints.json;web.config" />
+  </ItemGroup>
+
 </Project>

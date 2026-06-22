@@ -152,6 +152,10 @@
 									<i class="fas fa-qrcode me-2"></i>Chuyển khoản VietQR
 								</button>
 
+								<button type="submit" formaction="/Checkout/PayWithCOD" formmethod="post" class="btn btn-success w-100 rounded-pill py-3 mt-2">
+									<i class="fas fa-money-bill-wave me-2"></i>Thanh toán khi nhận hàng (COD)
+								</button>
+
 								<button type="submit" formaction="/Checkout/PayWithWallet" formmethod="post" class="btn btn-primary w-100 rounded-pill py-3 mt-2">
 									<i class="fas fa-wallet me-2"></i>Thanh toán bằng ví
 								</button>
@@ -238,53 +242,46 @@
 			}
 		}
 
-		function setStatus(message) {
-			if (!statusEl) return;
-			statusEl.textContent = message || '';
-			statusEl.style.display = message ? '' : 'none';
-		}
-
 		async function loadProvinces() {
-			setStatus('');
-			const provinces = await loadJson('/Checkout/GHNProvinces');
-			fillSelect(provinceSelect, provinces, 'Chọn tỉnh/thành', x => x.id);
-			if (!provinces.length) {
-				setStatus('Chưa tải được danh sách địa chỉ GHN. Kiểm tra GHN Token/ShopId trong appsettings.json và restart ứng dụng.');
-			}
+			if (!provinceSelect) return;
+			const provinces = await loadJson('/Checkout/GhnProvinces');
+			fillSelect(provinceSelect, provinces, 'Chọn tỉnh/thành', item => item.provinceId || item.Id || item.id);
 		}
 
-		provinceSelect?.addEventListener('change', async function () {
+		async function loadDistricts(provinceId) {
+			const districts = await loadJson('/Checkout/GhnDistricts?provinceId=' + encodeURIComponent(provinceId));
+			fillSelect(districtSelect, districts, 'Chọn quận/huyện', item => item.districtId || item.Id || item.id);
+			if (districtSelect) districtSelect.disabled = false;
+			fillSelect(wardSelect, [], 'Chọn phường/xã', () => '');
+			if (wardSelect) wardSelect.disabled = true;
 			if (districtInput) districtInput.value = '';
 			if (wardInput) wardInput.value = '';
-			fillSelect(districtSelect, [], 'Chọn quận/huyện', x => x.id);
-			fillSelect(wardSelect, [], 'Chọn phường/xã', x => x.code);
-			if (districtSelect) districtSelect.disabled = true;
-			if (wardSelect) wardSelect.disabled = true;
-			const provinceId = Number(this.value || 0);
-			if (!provinceId) return;
-			const districts = await loadJson('/Checkout/GHNDistricts?provinceId=' + provinceId);
-			fillSelect(districtSelect, districts, 'Chọn quận/huyện', x => x.id);
-			if (districtSelect) districtSelect.disabled = false;
-			if (!districts.length) setStatus('Không tải được quận/huyện từ GHN. Kiểm tra GHN Token hoặc thử chọn lại tỉnh/thành.');
-			else setStatus('');
-		});
+		}
 
-		districtSelect?.addEventListener('change', async function () {
-			if (districtInput) districtInput.value = this.value || '';
-			if (wardInput) wardInput.value = '';
-			fillSelect(wardSelect, [], 'Chọn phường/xã', x => x.code);
-			if (wardSelect) wardSelect.disabled = true;
-			const districtId = Number(this.value || 0);
-			if (!districtId) return;
-			const wards = await loadJson('/Checkout/GHNWards?districtId=' + districtId);
-			fillSelect(wardSelect, wards, 'Chọn phường/xã', x => x.code);
+		async function loadWards(districtId) {
+			const wards = await loadJson('/Checkout/GhnWards?districtId=' + encodeURIComponent(districtId));
+			fillSelect(wardSelect, wards, 'Chọn phường/xã', item => item.wardCode || item.Id || item.id);
 			if (wardSelect) wardSelect.disabled = false;
-			if (!wards.length) setStatus('Không tải được phường/xã từ GHN. Kiểm tra GHN Token hoặc thử chọn lại quận/huyện.');
-			else setStatus('');
+			if (wardInput) wardInput.value = '';
+		}
+
+		provinceSelect?.addEventListener('change', async () => {
+			const provinceId = provinceSelect.value;
+			if (!provinceId) return;
+			await loadDistricts(provinceId);
 		});
 
-		wardSelect?.addEventListener('change', function () {
-			if (wardInput) wardInput.value = this.value || '';
+		districtSelect?.addEventListener('change', async () => {
+			const districtId = districtSelect.value;
+			if (districtInput) districtInput.value = districtId;
+			if (!districtId) return;
+			await loadWards(districtId);
+			scheduleCalculate();
+		});
+
+		wardSelect?.addEventListener('change', () => {
+			const wardCode = wardSelect.value;
+			if (wardInput) wardInput.value = wardCode;
 			scheduleCalculate();
 		});
 

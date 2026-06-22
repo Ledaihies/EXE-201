@@ -16,9 +16,9 @@
 
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-	<link href="~/css/bootstrap.min.css" rel="stylesheet">
-	<link href="~/css/style.css" rel="stylesheet">
-	<link href="~/css/chat.css" rel="stylesheet">
+	<link href="~/css/bootstrap.min.css" rel="stylesheet" asp-append-version="true">
+	<link href="~/css/style.css" rel="stylesheet" asp-append-version="true">
+	<link href="~/css/chat.css" rel="stylesheet" asp-append-version="true">
 
 	<link href="~/lib/lightbox/css/lightbox.min.css" rel="stylesheet">
 	<link href="~/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
@@ -58,6 +58,10 @@
 					</small>
 				</div>
 				<div class="top-link pe-2">
+					<small class="text-white me-3">
+						<i class="fas fa-users me-2" style="opacity:0.9"></i>
+						<span id="nvHeaderVisitorCount">Hiện đang có ... người truy cập</span>
+					</small>
 					<a href="/Contact" class="text-white text-decoration-none"><small>Liên hệ</small></a>
 					<span class="text-white opacity-75">/</span>
 					<a href="/Product" class="text-white text-decoration-none"><small>Khám phá đặc sản</small></a>
@@ -71,7 +75,7 @@
 		<!-- Navbar -->
 		<div class="container px-0 nv-header-container">
 
-			<nav class="navbar navbar-light bg-white navbar-expand-xl nv-main-navbar">
+			<nav class="navbar navbar-light bg-white navbar-expand-xxl nv-main-navbar">
 
 				<a href="/" class="navbar-brand nv-brand logo-area">
 					<span class="nv-brand-mark"><i class="fas fa-leaf"></i></span>
@@ -166,6 +170,11 @@
 							}
 						</a>
 
+						@if (userId.HasValue)
+						{
+							@await Component.InvokeAsync("NotificationBell")
+						}
+
 						@if (isBackoffice)
 						{
 							<div class="dropdown my-auto">
@@ -179,14 +188,14 @@
 								<ul class="dropdown-menu dropdown-menu-end">
 									@if (roleName == "Admin")
 									{
-										<li><a class="dropdown-item" href="/Admin">Bảng điều khiển admin</a></li>
+										<li><a class="dropdown-item" href="/Admin">Bảng điều khiển quản trị</a></li>
 										<li><a class="dropdown-item" href="/ProductAdmin">Quản lý sản phẩm</a></li>
 										<li><a class="dropdown-item" href="/CategoryAdmin">Quản lý danh mục</a></li>
 										<li><a class="dropdown-item" href="/OrderAdmin">Quản lý đơn hàng</a></li>
 									}
 									else if (roleName == "Staff")
 									{
-										<li><a class="dropdown-item" href="/Staff">Bảng điều khiển staff</a></li>
+										<li><a class="dropdown-item" href="/Staff">Bảng điều khiển nhân viên</a></li>
 										<li><a class="dropdown-item" href="/StaffOrder">Đơn hàng</a></li>
 									}
 									else if (roleName == "Seller")
@@ -267,7 +276,39 @@
 
 
 	<!-- Page Content -->
-	<div class="container-fluid mt-5 pt-5 px-0">
+	<div class="container-fluid mt-5 pt-5 px-0 nv-page-content">
+
+		@{
+			var globalSuccessMessage = TempData["SuccessMessage"] as string;
+			var globalSellerMessage = TempData["SellerMessage"] as string;
+			var globalAccessMessage = TempData["SellerAccessMessage"] as string;
+			var globalErrorMessage = TempData["ErrorMessage"] as string;
+		}
+
+		@if (!string.IsNullOrWhiteSpace(globalSuccessMessage))
+		{
+			<div class="container pt-3">
+				<div class="alert alert-success mb-3">@globalSuccessMessage</div>
+			</div>
+		}
+		@if (!string.IsNullOrWhiteSpace(globalSellerMessage))
+		{
+			<div class="container pt-3">
+				<div class="alert alert-warning mb-3">@globalSellerMessage</div>
+			</div>
+		}
+		@if (!string.IsNullOrWhiteSpace(globalAccessMessage))
+		{
+			<div class="container pt-3">
+				<div class="alert alert-warning mb-3">@globalAccessMessage</div>
+			</div>
+		}
+		@if (!string.IsNullOrWhiteSpace(globalErrorMessage))
+		{
+			<div class="container pt-3">
+				<div class="alert alert-danger mb-3">@globalErrorMessage</div>
+			</div>
+		}
 
 		@RenderBody()
 
@@ -400,6 +441,15 @@
 	</div>
 
 	<script src="~/js/chat.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var visitorEl = document.getElementById('nvHeaderVisitorCount');
+			if (!visitorEl) return;
+
+			var count = Math.floor(Math.random() * 201);
+			visitorEl.textContent = 'Hiện đang có ' + count.toLocaleString('vi-VN') + ' người truy cập';
+		});
+	</script>
 
 	@RenderSection("Scripts", required: false)
 

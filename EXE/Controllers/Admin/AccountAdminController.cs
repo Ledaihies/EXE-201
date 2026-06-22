@@ -15,13 +15,15 @@ public class AccountAdminController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Sellers()
+    public async Task<IActionResult> Sellers(string? status = null)
     {
-        var rows = await BuildAccountRows("Seller");
+        var normalizedStatus = NormalizeSellerStatus(status);
+        var rows = await BuildAccountRows("Seller", normalizedStatus);
         ViewData["Title"] = "Quản lý người bán";
         ViewBag.AccountType = "Seller";
         ViewBag.Heading = "Quản lý tài khoản người bán";
         ViewBag.Description = "Danh sách toàn bộ người bán, số sản phẩm, đơn hàng và thông tin ngân hàng.";
+        ViewBag.StatusFilter = normalizedStatus ?? "All";
         return View("Accounts", rows);
     }
 
@@ -62,6 +64,12 @@ public class AccountAdminController : Controller
                 .Where(o => o.UserId == id)
                 .SumAsync(o => (decimal?)(o.TotalAmount ?? 0)) ?? 0m;
         ViewBag.ReviewCount = await _context.Reviews.CountAsync(r => r.UserId == id);
+        ViewBag.SellerApprovalStatus = user.SellerApprovalStatus ?? (isSeller ? "Approved" : null);
+        ViewBag.SellerApprovedAt = user.SellerApprovedAt;
+        ViewBag.SellerRejectReason = user.SellerRejectReason;
+        ViewBag.SellerApprovedBy = user.SellerApprovedByAdminId.HasValue
+            ? await _context.Users.Where(u => u.UserId == user.SellerApprovedByAdminId.Value).Select(u => u.FullName ?? u.Email).FirstOrDefaultAsync()
+            : null;
 
         ViewData["Title"] = "Chi tiết tài khoản";
         ViewBag.ReturnTo = NormalizeReturnTo(returnTo, user.Role?.RoleName);
@@ -118,13 +126,63 @@ public class AccountAdminController : Controller
         return Redirect(target);
     }
 
-    private async Task<List<AdminAccountRow>> BuildAccountRows(string roleName)
+    [HttpPost]
+    public async Task<IActionResult> ApproveSeller(int id, string? returnTo)
+    {
+        var seller = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.UserId == id);
+        if (seller == null) return NotFound();
+        if (!string.Equals(seller.Role?.RoleName, "Seller", StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
+
+        var adminId = HttpContext.Session.GetInt32("UserId");
+        if (!adminId.HasValue) return RedirectToAction("Login", "Auth");
+
+        seller.SellerApprovalStatus = "Approved";
+        seller.SellerApprovedAt = DateTime.Now;
+        seller.SellerApprovedByAdminId = adminId.Value;
+        seller.SellerRejectReason = null;
+        await _context.SaveChangesAsync();
+
+        TempData["AccountAdminMessage"] = "Đã duyệt người bán.";
+        return Redirect(NormalizeReturnTo(returnTo, "Seller"));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RejectSeller(int id, string? reason, string? returnTo)
+    {
+        var seller = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.UserId == id);
+        if (seller == null) return NotFound();
+        if (!string.Equals(seller.Role?.RoleName, "Seller", StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
+
+        seller.SellerApprovalStatus = "Rejected";
+        seller.SellerApprovedAt = null;
+        seller.SellerApprovedByAdminId = null;
+        seller.SellerRejectReason = string.IsNullOrWhiteSpace(reason)
+            ? "Không đạt yêu cầu duyệt seller."
+            : reason.Trim();
+        await _context.SaveChangesAsync();
+
+        TempData["AccountAdminMessage"] = "Đã từ chối người bán.";
+        return Redirect(NormalizeReturnTo(returnTo, "Seller"));
+    }
+
+    private async Task<List<AdminAccountRow>> BuildAccountRows(string roleName, string? sellerStatus = null)
     {
         var users = await _context.Users
             .Include(u => u.Role)
             .Where(u => u.Role != null && u.Role.RoleName == roleName)
             .OrderByDescending(u => u.CreatedDate)
             .ToListAsync();
+
+        if (string.Equals(roleName, "Seller", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(sellerStatus) && !string.Equals(sellerStatus, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            users = users.Where(u => string.Equals(NormalizeSellerStatus(u.SellerApprovalStatus), sellerStatus, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
 
         var ids = users.Select(u => u.UserId).ToList();
         var productCounts = await _context.Products
@@ -161,7 +219,10 @@ public class AccountAdminController : Controller
                     ? sellerOrderCounts.GetValueOrDefault(u.UserId)
                     : buyerOrders.Count,
                 buyerOrders.Total,
-                reviewCounts.GetValueOrDefault(u.UserId));
+                reviewCounts.GetValueOrDefault(u.UserId),
+                u.SellerApprovalStatus,
+                u.SellerApprovedAt,
+                u.SellerRejectReason);
         }).ToList();
     }
 
@@ -191,6 +252,19 @@ public class AccountAdminController : Controller
             : "/AccountAdmin/Buyers";
     }
 
-    public sealed record AdminAccountRow(User User, int ProductCount, int OrderCount, decimal OrderTotal, int ReviewCount);
+    private static string? NormalizeSellerStatus(string? status)
+    {
+        return string.IsNullOrWhiteSpace(status) ? null : status.Trim() switch
+        {
+            "Pending" or "Approved" or "Rejected" => status.Trim(),
+            "pending" => "Pending",
+            "approved" => "Approved",
+            "rejected" => "Rejected",
+            "all" => "All",
+            _ => status.Trim()
+        };
+    }
+
+    public sealed record AdminAccountRow(User User, int ProductCount, int OrderCount, decimal OrderTotal, int ReviewCount, string? SellerApprovalStatus, DateTime? SellerApprovedAt, string? SellerRejectReason);
     private sealed record AccountOrderStats(int Count, decimal Total);
 }

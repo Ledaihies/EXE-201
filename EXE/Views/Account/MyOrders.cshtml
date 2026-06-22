@@ -107,7 +107,7 @@
 						{
 							@foreach (var o in orders)
 							{
-								var statusName = o.Status?.StatusName ?? "N/A";
+								var statusName = o.Status?.StatusName ?? "Chưa cập nhật";
 								var href = $"/Account/OrderDetails/{o.OrderId}";
 								var canCancel = statusName == "Cho nguoi ban xac nhan" || statusName == "Cho lay hang";
 								var canConfirmReceived = statusName == "Cho giao hang";

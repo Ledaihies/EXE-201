@@ -6,6 +6,7 @@ using EXE.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
 builder.Services.AddMemoryCache();
 
@@ -18,6 +19,8 @@ builder.Services.AddScoped<IBankTransferService, BankTransferService>();
 builder.Services.AddHttpClient<ISePayTransactionLookupService, SePayTransactionLookupService>();
 builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IWebsiteVisitService, WebsiteVisitService>();
 builder.Services.Configure<GHNSettings>(builder.Configuration.GetSection("GHN"));
 builder.Services.AddHttpClient<IGHNService, GHNService>();
 
@@ -36,6 +39,7 @@ app.UseRouting();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
     await DbSeeder.SeedAsync(db);
 }
 

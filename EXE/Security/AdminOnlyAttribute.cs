@@ -18,13 +18,16 @@ public sealed class AdminOnlyAttribute : Attribute, IAsyncActionFilter
             return;
         }
 
+        var sessionRole = RoleAccess.Normalize(http.Session.GetString("RoleName"));
+        if (RoleAccess.IsRole(sessionRole, RoleAccess.Admin))
+        {
+            await next();
+            return;
+        }
+
         var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
-        var isAdmin = await db.Users
-            .AsNoTracking()
-            .Include(u => u.Role)
-            .AnyAsync(u => u.UserId == userId.Value &&
-                           u.Role != null &&
-                           u.Role.RoleName == "Admin");
+        var roleName = await RoleAccess.GetRoleNameAsync(http, db, userId.Value);
+        var isAdmin = RoleAccess.IsRole(roleName, RoleAccess.Admin);
 
         if (!isAdmin)
         {

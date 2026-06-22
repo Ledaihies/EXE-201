@@ -13,14 +13,16 @@ namespace EXE.Controllers
         private readonly IWalletService _walletService;
         private readonly IBankTransferService _bankTransferService;
         private readonly ISePayTransactionLookupService _sePayLookupService;
+        private readonly INotificationService _notificationService;
 
-        public AccountController(ApplicationDbContext context, IWebHostEnvironment env, IWalletService walletService, IBankTransferService bankTransferService, ISePayTransactionLookupService sePayLookupService)
+        public AccountController(ApplicationDbContext context, IWebHostEnvironment env, IWalletService walletService, IBankTransferService bankTransferService, ISePayTransactionLookupService sePayLookupService, INotificationService notificationService)
         {
             _context = context;
             _env = env;
             _walletService = walletService;
             _bankTransferService = bankTransferService;
             _sePayLookupService = sePayLookupService;
+            _notificationService = notificationService;
         }
 
         private int? GetCurrentUserId()
@@ -106,6 +108,8 @@ namespace EXE.Controllers
 
             var order = await _context.Orders
                 .Include(o => o.Status)
+                .Include(o => o.CODCollection)
+                .Include(o => o.OrderSettlements)
                 .Include(o => o.Payments)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
@@ -117,6 +121,17 @@ namespace EXE.Controllers
             if (CanCustomerCancel(status))
             {
                 order.StatusId = await GetStatusIdAsync("Da huy");
+                order.PaymentStatus = string.Equals(order.PaymentStatus, "PendingCODCollection", StringComparison.OrdinalIgnoreCase)
+                    ? "Cancelled"
+                    : order.PaymentStatus;
+                if (order.CODCollection != null)
+                {
+                    order.CODCollection.Status = "Cancelled";
+                }
+                foreach (var settlement in order.OrderSettlements)
+                {
+                    settlement.SettlementStatus = "Cancelled";
+                }
                 foreach (var item in order.OrderItems)
                 {
                     if (item.Product != null)
@@ -244,6 +259,7 @@ namespace EXE.Controllers
 
             var order = await _context.Orders
                 .Include(o => o.Status)
+                .Include(o => o.CODCollection)
                 .FirstOrDefaultAsync(o => o.OrderId == id && o.UserId == userId.Value);
 
             if (order == null) return NotFound();
@@ -252,6 +268,11 @@ namespace EXE.Controllers
             if (status == "Cho giao hang")
             {
                 order.StatusId = await GetStatusIdAsync("Da nhan hang");
+                if (order.CODCollection != null)
+                {
+                    order.CODCollection.Status = "CollectedFromCustomer";
+                    order.CODCollection.CollectedAt = DateTime.Now;
+                }
                 await _context.SaveChangesAsync();
                 TempData["OrderMessage"] = "Cảm ơn bạn đã xác nhận nhận hàng. Bạn có thể đánh giá sản phẩm.";
             }
@@ -280,26 +301,26 @@ namespace EXE.Controllers
             var status = order.Status?.StatusName ?? string.Empty;
             if (!string.Equals(status, "Da nhan hang", StringComparison.OrdinalIgnoreCase))
             {
-                TempData["OrderMessage"] = "Chi co the yeu cau hoan hang sau khi da xac nhan nhan hang.";
+                TempData["OrderMessage"] = "Chỉ có thể yêu cầu hoàn hàng sau khi đã xác nhận nhận hàng.";
                 return RedirectToAction(nameof(OrderDetails), new { id });
             }
 
             if (order.ReturnRequests.Any(r => r.Status == "Pending" || r.Status == "Approved"))
             {
-                TempData["OrderMessage"] = "Don hang nay da co yeu cau hoan hang dang xu ly hoac da duyet.";
+                TempData["OrderMessage"] = "Đơn hàng này đã có yêu cầu hoàn hàng đang xử lý hoặc đã duyệt.";
                 return RedirectToAction(nameof(OrderDetails), new { id });
             }
 
             if (string.IsNullOrWhiteSpace(reason))
             {
-                TempData["OrderMessage"] = "Vui long nhap ly do hoan hang.";
+                TempData["OrderMessage"] = "Vui lòng nhập lý do hoàn hàng.";
                 return RedirectToAction(nameof(OrderDetails), new { id });
             }
 
             var proofFileName = await SaveReturnProofImage(proofImage);
             if (string.IsNullOrWhiteSpace(proofFileName))
             {
-                TempData["OrderMessage"] = "Vui long tai len anh minh chung hop le (.jpg, .png, .gif, .webp).";
+                TempData["OrderMessage"] = "Vui lòng tải lên ảnh minh chứng hợp lệ (.jpg, .png, .gif, .webp).";
                 return RedirectToAction(nameof(OrderDetails), new { id });
             }
 
@@ -316,7 +337,7 @@ namespace EXE.Controllers
             order.StatusId = await GetStatusIdAsync("Cho xac nhan hoan hang");
 
             await _context.SaveChangesAsync();
-            TempData["OrderMessage"] = "Da gui yeu cau hoan hang. Vui long cho nguoi ban xac nhan.";
+            TempData["OrderMessage"] = "Đã gửi yêu cầu hoàn hàng. Vui lòng chờ người bán xác nhận.";
             return RedirectToAction(nameof(OrderDetails), new { id });
         }
 

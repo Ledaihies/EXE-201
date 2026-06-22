@@ -4,6 +4,14 @@
     ViewData["Title"] = "Doanh thu admin";
     var totalGrossRevenue = ViewBag.TotalGrossRevenue as decimal? ?? 0m;
     var totalAdminCommission = ViewBag.TotalAdminCommission as decimal? ?? 0m;
+    var totalOnlineRevenue = ViewBag.TotalOnlineRevenue as decimal? ?? 0m;
+    var totalCODRemittedRevenue = ViewBag.TotalCODRemittedRevenue as decimal? ?? 0m;
+    var codPendingCollection = ViewBag.CODPendingCollection as decimal? ?? 0m;
+    var codCashInTransit = ViewBag.CODCashInTransit as decimal? ?? 0m;
+    var codRemittedTotal = ViewBag.CODRemittedTotal as decimal? ?? 0m;
+    var totalPlatformFee = ViewBag.TotalPlatformFee as decimal? ?? 0m;
+    var totalSellerPayable = ViewBag.TotalSellerPayable as decimal? ?? 0m;
+    var totalSellerPaid = ViewBag.TotalSellerPaid as decimal? ?? 0m;
     var totalAdvertisingRevenue = ViewBag.TotalAdvertisingRevenue as decimal? ?? 0m;
     var totalWalletTopUpRevenue = ViewBag.TotalWalletTopUpRevenue as decimal? ?? 0m;
     var totalShippingRefunds = ViewBag.TotalShippingRefunds as decimal? ?? 0m;
@@ -18,6 +26,11 @@
     int year = ViewBag.Year ?? DateTime.Today.Year;
     var sellerPayoutSummaries = ViewBag.SellerPayoutSummaries as IEnumerable<EXE.ViewModels.CommissionDashboardItem>
         ?? Enumerable.Empty<EXE.ViewModels.CommissionDashboardItem>();
+    var codCollections = ViewBag.CODCollections as IEnumerable<EXE.Models.CODCollection>
+        ?? Enumerable.Empty<EXE.Models.CODCollection>();
+    var readySettlements = ViewBag.ReadySettlements as IEnumerable<EXE.Models.OrderSettlement>
+        ?? Enumerable.Empty<EXE.Models.OrderSettlement>();
+    var revenueMessage = TempData["RevenueMessage"] as string;
 }
 
 <style>
@@ -65,7 +78,7 @@
                 <input type="number" min="1" max="12" name="month" value="@month" class="form-control" />
             </div>
             <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Năm</label>
+                <label class="form-label small text-muted mb-1">Nam</label>
                 <input type="number" min="2020" max="2100" name="year" value="@year" class="form-control" />
             </div>
             <div class="col-md-2 d-flex gap-2">
@@ -74,6 +87,11 @@
             </div>
         </form>
     </div>
+
+    @if (!string.IsNullOrWhiteSpace(revenueMessage))
+    {
+        <div class="alert alert-info">@revenueMessage</div>
+    }
 
     <div class="row g-3 mb-4">
         <div class="col-md-6 col-xl-2">
@@ -120,27 +138,202 @@
         </div>
     </div>
 
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">Tổng doanh thu online</div>
+                <div class="value text-primary">@String.Format("{0:N0}", totalOnlineRevenue) đ</div>
+                <div class="hint">VietQR và ví đã thanh toán</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">COD đã về admin</div>
+                <div class="value text-success">@String.Format("{0:N0}", totalCODRemittedRevenue) đ</div>
+                <div class="hint">Theo ngày tiền được xác nhận về sàn</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">Tổng phí sàn</div>
+                <div class="value">@String.Format("{0:N0}", totalPlatformFee) đ</div>
+                <div class="hint">Platform fee + COD fee</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">Đã payout seller</div>
+                <div class="value text-info">@String.Format("{0:N0}", totalSellerPaid) đ</div>
+                <div class="hint">Tổng payout đã đánh dấu paid</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">COD chờ thu</div>
+                <div class="value">@String.Format("{0:N0}", codPendingCollection) đ</div>
+                <div class="hint">Chờ thu</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">COD ở shipper</div>
+                <div class="value text-warning">@String.Format("{0:N0}", codCashInTransit) đ</div>
+                <div class="hint">CashInTransit</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">COD đã về admin</div>
+                <div class="value text-success">@String.Format("{0:N0}", codRemittedTotal) đ</div>
+                <div class="hint">Tổng RemittedToAdmin hiện tại</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="rev-card rev-kpi">
+                <div class="label">Cần trả seller</div>
+                <div class="value text-danger">@String.Format("{0:N0}", totalSellerPayable) đ</div>
+                <div class="hint">Settlement đang WaitingPayout</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rev-card table-responsive mb-4">
+        <div class="p-3 border-bottom">
+            <h3 class="h5 mb-1">Quản lý COD</h3>
+            <div class="text-muted small">Chỉ admin mới có thể xác nhận tiền COD đã về sàn.</div>
+        </div>
+        <table class="table mb-0 align-middle rev-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Đơn hàng</th>
+                    <th>Khách hàng</th>
+                    <th>Trạng thái COD</th>
+                    <th class="text-end">Số tiền</th>
+                    <th>Ngày tạo</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!codCollections.Any())
+                {
+                    <tr><td colspan="6" class="text-center py-4 text-muted">Không có COD trong bộ lọc này.</td></tr>
+                }
+                else
+                {
+                    foreach (var cod in codCollections)
+                    {
+                        var canRemit = cod.Status == "CollectedFromCustomer";
+                        <tr>
+                            <td>
+                                <a href="/OrderAdmin/Details/@cod.OrderId" class="fw-semibold">#@cod.OrderId</a>
+                                <div class="small text-muted">@cod.Order?.Status?.StatusName</div>
+                            </td>
+                            <td>@(cod.Order?.User?.FullName ?? cod.Order?.User?.Email ?? "Khách lẻ")</td>
+                            <td><span class="badge bg-secondary">@cod.Status</span></td>
+                            <td class="text-end fw-semibold">@String.Format("{0:N0}", cod.Amount) đ</td>
+                            <td>@cod.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end">
+                                @if (canRemit)
+                                {
+                                    <form method="post" action="/RevenueAdmin/ConfirmCODRemitted/@cod.CODCollectionId" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="note" value="Admin confirmed COD remittance" />
+                                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">Xác nhận tiền về</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="small text-muted">Không có thao tác</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="rev-card table-responsive mb-4">
+        <div class="p-3 border-bottom">
+            <h3 class="h5 mb-1">Settlement chờ payout</h3>
+            <div class="text-muted small">Chỉ settlement COD đã RemittedToAdmin mới được payout.</div>
+        </div>
+        <table class="table mb-0 align-middle rev-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Seller</th>
+                    <th>Đơn hàng</th>
+                    <th class="text-end">Tổng tiền</th>
+                    <th class="text-end">Phí sàn</th>
+                    <th class="text-end">Phí ship</th>
+                    <th class="text-end">Seller nhận</th>
+                    <th class="text-end">Thanh toán</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!readySettlements.Any())
+                {
+                    <tr><td colspan="7" class="text-center py-4 text-muted">Không có settlement đang chờ payout.</td></tr>
+                }
+                else
+                {
+                    foreach (var group in readySettlements.GroupBy(s => s.SellerId))
+                    {
+                        var first = group.First();
+                        foreach (var settlement in group)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@(settlement.Seller?.FullName ?? settlement.Seller?.Email ?? $"Seller #{settlement.SellerId}")</div>
+                                    <div class="small text-muted">Seller #@settlement.SellerId</div>
+                                </td>
+                                <td>#@settlement.OrderId</td>
+                                <td class="text-end">@String.Format("{0:N0}", settlement.GrossAmount) đ</td>
+                                <td class="text-end">@String.Format("{0:N0}", settlement.PlatformFee + settlement.CodFee) đ</td>
+                                <td class="text-end">@String.Format("{0:N0}", settlement.ShippingFee) đ</td>
+                                <td class="text-end fw-semibold">@String.Format("{0:N0}", settlement.SellerReceivable) đ</td>
+                                <td class="text-end">
+                                    @if (settlement == first)
+                                    {
+                                        <form method="post" action="/RevenueAdmin/CreateSellerPayout" class="d-inline" onsubmit="return confirm('Đánh dấu payout đã trả cho seller này?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="sellerId" value="@group.Key" />
+                                            <input type="hidden" name="payoutMethod" value="BankTransfer" />
+                                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">
+                                                Trả @String.Format("{0:N0}", group.Sum(x => x.SellerReceivable)) đ
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
     <div class="rev-card table-responsive mb-4">
         <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h3 class="h5 mb-1">Thanh toan cho nguoi ban</h3>
-                <div class="text-muted small">Dung bang nay de chuyen tien theo tung nguoi ban trong bo loc hien tai.</div>
+                <h3 class="h5 mb-1">Thanh toán cho người bán</h3>
+                <div class="text-muted small">Dùng bảng này để chuyển tiền theo từng người bán trong bộ lọc hiện tại.</div>
             </div>
         </div>
         <table class="table mb-0 align-middle rev-table">
             <thead class="table-light">
                 <tr>
-                    <th>NgÆ°á»i bĂ¡n</th>
-                    <th>Tai khoan nhan tien</th>
-                    <th class="text-end">Tien hang 85%</th>
-                    <th class="text-end">Hoan ship</th>
-                    <th class="text-end">Can chuyen</th>
+                    <th>Người bán</th>
+                    <th>Tài khoản nhận tiền</th>
+                    <th class="text-end">Tiền hàng 85%</th>
+                    <th class="text-end">Hoàn ship</th>
+                    <th class="text-end">Cần chuyển</th>
                 </tr>
             </thead>
             <tbody>
                 @if (!sellerPayoutSummaries.Any())
                 {
-                    <tr><td colspan="5" class="text-center py-4 text-muted">Khong co nguoi ban can thanh toan trong bo loc nay.</td></tr>
+                    <tr><td colspan="5" class="text-center py-4 text-muted">Không có người bán cần thanh toán trong bộ lọc này.</td></tr>
                 }
                 else
                 {
@@ -151,7 +344,7 @@
                                 <div class="fw-semibold">@seller.SellerName</div>
                                 @if (seller.SellerId.HasValue)
                                 {
-                                    <div class="small text-muted">Nguoi ban #@seller.SellerId</div>
+                                    <div class="small text-muted">Người bán #@seller.SellerId</div>
                                 }
                             </td>
                             <td>
@@ -160,21 +353,21 @@
                                     <div class="rev-bank">
                                         <div><span class="fw-semibold">NH:</span> @seller.SellerBankName</div>
                                         <div><span class="fw-semibold">STK:</span> @seller.SellerBankAccountNumber</div>
-                                        <div><span class="fw-semibold">Chu TK:</span> @seller.SellerBankAccountName</div>
+                                        <div><span class="fw-semibold">Chủ TK:</span> @seller.SellerBankAccountName</div>
                                         @if (!string.IsNullOrWhiteSpace(seller.SellerBankBranch))
                                         {
-                                            <div><span class="fw-semibold">Ghi chu:</span> @seller.SellerBankBranch</div>
+                                            <div><span class="fw-semibold">Ghi chú:</span> @seller.SellerBankBranch</div>
                                         }
                                     </div>
                                 }
                                 else
                                 {
-                                    <div class="small text-danger">Chua co tai khoan ngan hang</div>
+                                    <div class="small text-danger">Chưa có tài khoản ngân hàng</div>
                                 }
                             </td>
-                            <td class="text-end fw-semibold">@String.Format("{0:N0}", seller.SellerPayout - seller.ShippingRefundAmount) Ä‘</td>
-                            <td class="text-end">@String.Format("{0:N0}", seller.ShippingRefundAmount) Ä‘</td>
-                            <td class="text-end text-primary fw-bold">@String.Format("{0:N0}", seller.SellerPayout) Ä‘</td>
+                            <td class="text-end fw-semibold">@String.Format("{0:N0}", seller.SellerPayout - seller.ShippingRefundAmount) đ</td>
+                            <td class="text-end">@String.Format("{0:N0}", seller.ShippingRefundAmount) đ</td>
+                            <td class="text-end text-primary fw-bold">@String.Format("{0:N0}", seller.SellerPayout) đ</td>
                         </tr>
                     }
                 }
@@ -188,7 +381,7 @@
                 <tr>
                     <th>Sản phẩm</th>
                     <th>Người bán</th>
-                    <th>Tai khoan nhan tien</th>
+                    <th>Tài khoản nhận tiền</th>
                     <th class="text-center">SL bán</th>
                     <th class="text-center">Đơn</th>
                     <th class="text-end">Doanh thu sản phẩm</th>
@@ -214,16 +407,16 @@
                                     <div class="rev-bank">
                                         <div><span class="fw-semibold">NH:</span> @item.SellerBankName</div>
                                         <div><span class="fw-semibold">STK:</span> @item.SellerBankAccountNumber</div>
-                                        <div><span class="fw-semibold">Chu TK:</span> @item.SellerBankAccountName</div>
+                                        <div><span class="fw-semibold">Chủ TK:</span> @item.SellerBankAccountName</div>
                                         @if (!string.IsNullOrWhiteSpace(item.SellerBankBranch))
                                         {
-                                            <div><span class="fw-semibold">Ghi chu:</span> @item.SellerBankBranch</div>
+                                            <div><span class="fw-semibold">Ghi chú:</span> @item.SellerBankBranch</div>
                                         }
                                     </div>
                                 }
                                 else
                                 {
-                                    <div class="small text-danger">Chua co tai khoan ngan hang</div>
+                                    <div class="small text-danger">Chưa có tài khoản ngân hàng</div>
                                 }
                             </td>
                             <td class="text-center">@item.QuantitySold</td>

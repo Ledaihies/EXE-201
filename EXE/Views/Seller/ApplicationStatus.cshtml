@@ -1,0 +1,142 @@
+@{
+	ViewData["Title"] = "Trạng thái gian hàng";
+	var message = TempData["SellerMessage"] as string;
+	var approvalStatus = ViewBag.SellerApprovalStatus as string ?? "Pending";
+	var isRejected = string.Equals(approvalStatus, "Rejected", StringComparison.OrdinalIgnoreCase);
+	var sellerRejectReason = ViewBag.SellerRejectReason as string ?? string.Empty;
+	var sellerDisplayName = ViewBag.SellerDisplayName as string ?? string.Empty;
+	var sellerEmail = ViewBag.SellerEmail as string ?? string.Empty;
+	var sellerPhone = ViewBag.SellerPhone as string ?? string.Empty;
+	var sellerAddress = ViewBag.SellerAddress as string ?? string.Empty;
+	var sellerLicenseImageUrl = ViewBag.SellerLicenseImageUrl as string ?? string.Empty;
+	var sellerOriginProofImageUrl = ViewBag.SellerOriginProofImageUrl as string ?? string.Empty;
+}
+
+<style>
+	.seller-status-page { background: #f6f8fb; }
+	.seller-status-shell { max-width: 1120px; }
+	.seller-status-card { background: #fff; border: 1px solid #d7dee8; border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+</style>
+
+<div class="seller-status-page py-4">
+	<div class="container seller-status-shell">
+		<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+			<div>
+				<div class="text-primary text-uppercase small fw-bold">Trạng thái gian hàng</div>
+				<h1 class="h3 mb-1">Hồ sơ người bán</h1>
+				<div class="text-muted">Bạn chỉ có thể đăng sản phẩm sau khi Admin duyệt hồ sơ.</div>
+			</div>
+			<span class="badge @(isRejected ? "bg-danger" : "bg-warning text-dark") px-3 py-2">
+				@(isRejected ? "Bị từ chối" : "Chờ duyệt")
+			</span>
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(message))
+		{
+			<div class="alert alert-warning border-0 shadow-sm">@message</div>
+		}
+
+		<div class="row g-4">
+			<div class="col-lg-7">
+				<div class="seller-status-card p-4 h-100">
+					<h2 class="h5 mb-3">Thông tin hiện tại</h2>
+					<div class="row g-3">
+						<div class="col-md-6">
+							<label class="form-label small text-muted mb-1">Tên shop</label>
+							<input class="form-control" value="@sellerDisplayName" readonly />
+						</div>
+						<div class="col-md-6">
+							<label class="form-label small text-muted mb-1">Email</label>
+							<input class="form-control" value="@sellerEmail" readonly />
+						</div>
+						<div class="col-md-6">
+							<label class="form-label small text-muted mb-1">Số điện thoại</label>
+							<input class="form-control" value="@sellerPhone" readonly />
+						</div>
+						<div class="col-12">
+							<label class="form-label small text-muted mb-1">Địa chỉ</label>
+							<textarea class="form-control" rows="2" readonly>@sellerAddress</textarea>
+						</div>
+						<div class="col-md-6">
+							<label class="form-label small text-muted mb-1">Ảnh giấy phép</label>
+							@if (!string.IsNullOrWhiteSpace(sellerLicenseImageUrl))
+							{
+								<div class="mt-1"><a href="/img/@sellerLicenseImageUrl" target="_blank">Xem ảnh hiện tại</a></div>
+							}
+						</div>
+						<div class="col-md-6">
+							<label class="form-label small text-muted mb-1">Ảnh nguồn gốc</label>
+							@if (!string.IsNullOrWhiteSpace(sellerOriginProofImageUrl))
+							{
+								<div class="mt-1"><a href="/img/@sellerOriginProofImageUrl" target="_blank">Xem ảnh hiện tại</a></div>
+							}
+						</div>
+					</div>
+					@if (isRejected && !string.IsNullOrWhiteSpace(sellerRejectReason))
+					{
+						<div class="alert alert-danger mt-4 mb-0">
+							Lý do từ chối: @sellerRejectReason
+						</div>
+					}
+				</div>
+			</div>
+
+			<div class="col-lg-5">
+				<div class="seller-status-card p-4 h-100">
+					@if (isRejected)
+					{
+						<h2 class="h5 mb-2">Gửi lại hồ sơ</h2>
+						<p class="text-muted small mb-3">Cập nhật thông tin và tải lại giấy tờ để Admin duyệt lại.</p>
+
+						<form method="post" action="/Seller/ResubmitApplication" enctype="multipart/form-data">
+							<div class="mb-3">
+								<label class="form-label">Tên shop</label>
+								<input type="text" name="shopName" class="form-control" value="@sellerDisplayName" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Tên chủ shop</label>
+								<input type="text" name="ownerName" class="form-control" placeholder="Nguyễn Văn A" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Email</label>
+								<input type="email" name="email" class="form-control" value="@sellerEmail" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Số điện thoại</label>
+								<input type="tel" name="phone" class="form-control" value="@sellerPhone">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Địa chỉ lấy hàng</label>
+								<input type="text" name="address" class="form-control" value="@sellerAddress">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Mật khẩu mới <span class="text-muted small">(nếu muốn đổi)</span></label>
+								<input type="password" name="password" class="form-control">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Xác nhận mật khẩu</label>
+								<input type="password" name="confirmPassword" class="form-control">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Ảnh giấy phép kinh doanh</label>
+								<input type="file" name="licenseImageFile" class="form-control" accept="image/*" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Ảnh chứng minh nguồn gốc xuất xứ</label>
+								<input type="file" name="originProofImageFile" class="form-control" accept="image/*" required>
+							</div>
+							<button type="submit" class="btn btn-primary w-100">Gửi lại hồ sơ</button>
+						</form>
+					}
+					else
+					{
+						<h2 class="h5 mb-2">Đang chờ duyệt</h2>
+						<div class="alert alert-warning mb-0">
+							Hồ sơ của bạn đang chờ Admin xác nhận. Khi được duyệt, bạn sẽ vào được kênh người bán và đăng sản phẩm.
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

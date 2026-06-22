@@ -11,15 +11,16 @@ public static class DbSeeder
         await EnsureMarketplaceSchemaAsync(db);
 
         // Roles (idempotent)
-        var hasAdminRole = await db.Roles.AnyAsync(r => r.RoleName == "Admin");
-        var hasUserRole = await db.Roles.AnyAsync(r => r.RoleName == "User");
-        var hasSellerRole = await db.Roles.AnyAsync(r => r.RoleName == "Seller");
+        var hasAdminRole = await db.Roles.AnyAsync(r => r.RoleName != null && r.RoleName.Trim().ToLower() == "admin");
+        var hasUserRole = await db.Roles.AnyAsync(r => r.RoleName != null && r.RoleName.Trim().ToLower() == "user");
+        var hasSellerRole = await db.Roles.AnyAsync(r => r.RoleName != null && r.RoleName.Trim().ToLower() == "seller");
         if (!hasAdminRole) db.Roles.Add(new Role { RoleName = "Admin" });
         if (!hasUserRole) db.Roles.Add(new Role { RoleName = "User" });
         if (!hasSellerRole) db.Roles.Add(new Role { RoleName = "Seller" });
         if (!hasAdminRole || !hasUserRole || !hasSellerRole) await db.SaveChangesAsync();
 
-        var adminRoleId = await db.Roles.Where(r => r.RoleName == "Admin").Select(r => (int?)r.RoleId).FirstOrDefaultAsync();
+        var adminRoleId = await db.Roles.Where(r => r.RoleName != null && r.RoleName.Trim().ToLower() == "admin").Select(r => (int?)r.RoleId).FirstOrDefaultAsync();
+        var sellerRoleId = await db.Roles.Where(r => r.RoleName != null && r.RoleName.Trim().ToLower() == "seller").Select(r => (int?)r.RoleId).FirstOrDefaultAsync();
         if (adminRoleId.HasValue)
         {
             // Promote likely admin accounts (common in student projects): emails containing "admin".
@@ -53,6 +54,21 @@ public static class DbSeeder
                 });
                 await db.SaveChangesAsync();
             }
+        }
+
+        if (sellerRoleId.HasValue)
+        {
+            await db.Database.ExecuteSqlRawAsync("""
+UPDATE u
+SET RoleId = {0}
+FROM Users u
+WHERE EXISTS (
+    SELECT 1
+    FROM Products p
+    WHERE p.SellerId = u.UserId
+)
+AND (u.RoleId IS NULL OR u.RoleId <> {0});
+""", sellerRoleId.Value);
         }
 
         // Order statuses
@@ -475,9 +491,46 @@ END;
 """);
 
         await db.Database.ExecuteSqlRawAsync("""
+IF OBJECT_ID('ProductImages', 'U') IS NULL
+BEGIN
+    CREATE TABLE ProductImages (
+        ImageId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        ProductId INT NULL,
+        ImageUrl NVARCHAR(300) NULL,
+        CONSTRAINT FK_ProductImages_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
+    );
+END;
+
+IF COL_LENGTH('ProductImages', 'ImageUrl') IS NULL
+BEGIN
+    ALTER TABLE ProductImages ADD ImageUrl NVARCHAR(300) NULL;
+END;
+
+IF COL_LENGTH('ProductImages', 'ProductId') IS NULL
+BEGIN
+    ALTER TABLE ProductImages ADD ProductId INT NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'IX_ProductImages_ProductId'
+      AND object_id = OBJECT_ID('ProductImages')
+)
+BEGIN
+    CREATE INDEX IX_ProductImages_ProductId ON ProductImages(ProductId);
+END;
+""");
+
+        await db.Database.ExecuteSqlRawAsync("""
 IF COL_LENGTH('Orders', 'ShippingFee') IS NULL
 BEGIN
     ALTER TABLE Orders ADD ShippingFee DECIMAL(10, 2) NULL;
+END;
+
+IF COL_LENGTH('Orders', 'PaymentStatus') IS NULL
+BEGIN
+    ALTER TABLE Orders ADD PaymentStatus NVARCHAR(50) NULL;
 END;
 """);
 
@@ -648,6 +701,128 @@ BEGIN
         CONSTRAINT FK_OrderReturnRequests_User FOREIGN KEY (UserId) REFERENCES Users(UserId),
         CONSTRAINT FK_OrderReturnRequests_SellerConfirmedBy FOREIGN KEY (SellerConfirmedByUserId) REFERENCES Users(UserId)
     );
+END;
+""");
+
+        await db.Database.ExecuteSqlRawAsync("""
+IF OBJECT_ID('CODCollections', 'U') IS NULL
+BEGIN
+    CREATE TABLE CODCollections (
+        CODCollectionId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        OrderId INT NOT NULL,
+        Amount DECIMAL(10,2) NOT NULL,
+        Status NVARCHAR(50) NOT NULL CONSTRAINT DF_CODCollections_Status DEFAULT N'PendingCollection',
+        CollectedAt DATETIME NULL,
+        RemittedToAdminAt DATETIME NULL,
+        ConfirmedByAdminId INT NULL,
+        Note NVARCHAR(500) NULL,
+        CreatedAt DATETIME NOT NULL CONSTRAINT DF_CODCollections_CreatedAt DEFAULT GETDATE(),
+        CONSTRAINT FK_CODCollections_Orders_OrderId FOREIGN KEY (OrderId) REFERENCES Orders(OrderId) ON DELETE CASCADE,
+        CONSTRAINT FK_CODCollections_Users_ConfirmedByAdminId FOREIGN KEY (ConfirmedByAdminId) REFERENCES Users(UserId)
+    );
+END;
+
+IF COL_LENGTH('CODCollections', 'CollectedAt') IS NULL
+BEGIN
+    ALTER TABLE CODCollections ADD CollectedAt DATETIME NULL;
+END;
+
+IF COL_LENGTH('CODCollections', 'RemittedToAdminAt') IS NULL
+BEGIN
+    ALTER TABLE CODCollections ADD RemittedToAdminAt DATETIME NULL;
+END;
+
+IF COL_LENGTH('CODCollections', 'ConfirmedByAdminId') IS NULL
+BEGIN
+    ALTER TABLE CODCollections ADD ConfirmedByAdminId INT NULL;
+END;
+
+IF COL_LENGTH('CODCollections', 'Note') IS NULL
+BEGIN
+    ALTER TABLE CODCollections ADD Note NVARCHAR(500) NULL;
+END;
+
+IF COL_LENGTH('CODCollections', 'CreatedAt') IS NULL
+BEGIN
+    ALTER TABLE CODCollections ADD CreatedAt DATETIME NOT NULL CONSTRAINT DF_CODCollections_CreatedAt_Late DEFAULT GETDATE();
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_CODCollections_OrderId' AND object_id = OBJECT_ID('CODCollections'))
+BEGIN
+    CREATE UNIQUE INDEX IX_CODCollections_OrderId ON CODCollections(OrderId);
+END;
+""");
+
+        await db.Database.ExecuteSqlRawAsync("""
+IF OBJECT_ID('OrderSettlements', 'U') IS NULL
+BEGIN
+    CREATE TABLE OrderSettlements (
+        OrderSettlementId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        OrderId INT NOT NULL,
+        SellerId INT NOT NULL,
+        GrossAmount DECIMAL(10,2) NOT NULL,
+        PlatformFee DECIMAL(10,2) NOT NULL,
+        ShippingFee DECIMAL(10,2) NOT NULL,
+        CodFee DECIMAL(10,2) NOT NULL,
+        SellerReceivable DECIMAL(10,2) NOT NULL,
+        AdminRevenue DECIMAL(10,2) NOT NULL,
+        PaymentMethod NVARCHAR(50) NOT NULL CONSTRAINT DF_OrderSettlements_PaymentMethod DEFAULT N'COD',
+        SettlementStatus NVARCHAR(50) NOT NULL CONSTRAINT DF_OrderSettlements_Status DEFAULT N'NotReady',
+        CreatedAt DATETIME NOT NULL CONSTRAINT DF_OrderSettlements_CreatedAt DEFAULT GETDATE(),
+        SettledAt DATETIME NULL,
+        CONSTRAINT FK_OrderSettlements_Orders_OrderId FOREIGN KEY (OrderId) REFERENCES Orders(OrderId) ON DELETE CASCADE,
+        CONSTRAINT FK_OrderSettlements_Users_SellerId FOREIGN KEY (SellerId) REFERENCES Users(UserId)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_OrderSettlements_OrderId_SellerId' AND object_id = OBJECT_ID('OrderSettlements'))
+BEGIN
+    CREATE UNIQUE INDEX IX_OrderSettlements_OrderId_SellerId ON OrderSettlements(OrderId, SellerId);
+END;
+""");
+
+        await db.Database.ExecuteSqlRawAsync("""
+IF OBJECT_ID('SellerPayouts', 'U') IS NULL
+BEGIN
+    CREATE TABLE SellerPayouts (
+        SellerPayoutId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        SellerId INT NOT NULL,
+        TotalAmount DECIMAL(10,2) NOT NULL,
+        Status NVARCHAR(50) NOT NULL CONSTRAINT DF_SellerPayouts_Status DEFAULT N'Pending',
+        PayoutMethod NVARCHAR(100) NULL,
+        PaidAt DATETIME NULL,
+        CreatedByAdminId INT NULL,
+        Note NVARCHAR(500) NULL,
+        CreatedAt DATETIME NOT NULL CONSTRAINT DF_SellerPayouts_CreatedAt DEFAULT GETDATE(),
+        CONSTRAINT FK_SellerPayouts_Users_SellerId FOREIGN KEY (SellerId) REFERENCES Users(UserId),
+        CONSTRAINT FK_SellerPayouts_Users_CreatedByAdminId FOREIGN KEY (CreatedByAdminId) REFERENCES Users(UserId)
+    );
+END;
+
+IF OBJECT_ID('SellerPayoutItems', 'U') IS NULL
+BEGIN
+    CREATE TABLE SellerPayoutItems (
+        SellerPayoutItemId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        SellerPayoutId INT NOT NULL,
+        OrderSettlementId INT NOT NULL,
+        OrderId INT NOT NULL,
+        Amount DECIMAL(10,2) NOT NULL,
+        CONSTRAINT FK_SellerPayoutItems_SellerPayouts_SellerPayoutId FOREIGN KEY (SellerPayoutId) REFERENCES SellerPayouts(SellerPayoutId) ON DELETE CASCADE,
+        CONSTRAINT FK_SellerPayoutItems_OrderSettlements_OrderSettlementId FOREIGN KEY (OrderSettlementId) REFERENCES OrderSettlements(OrderSettlementId),
+        CONSTRAINT FK_SellerPayoutItems_Orders_OrderId FOREIGN KEY (OrderId) REFERENCES Orders(OrderId)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SellerPayoutItems_OrderSettlementId' AND object_id = OBJECT_ID('SellerPayoutItems'))
+BEGIN
+    CREATE UNIQUE INDEX IX_SellerPayoutItems_OrderSettlementId ON SellerPayoutItems(OrderSettlementId);
+END;
+""");
+
+        await db.Database.ExecuteSqlRawAsync("""
+IF NOT EXISTS (SELECT 1 FROM PaymentMethods WHERE MethodName = N'COD')
+BEGIN
+    INSERT INTO PaymentMethods (MethodName) VALUES (N'COD');
 END;
 """);
 
